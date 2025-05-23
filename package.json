@@ -80,7 +80,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/denispanov/diff-native.git"
+    "url": "git+https://github.com/denispanov/diff-native.git"
   },
   "bugs": {
     "url": "https://github.com/denispanov/diff-native/issues"
