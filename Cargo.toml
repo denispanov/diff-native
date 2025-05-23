@@ -1,0 +1,55 @@
+[package]
+name    = "diff_native"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance text diffing library built with Rust and WebAssembly"
+repository = "https://github.com/denispanov/diff-native"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# ─── core ──────────────────────────────────────────────────────────────
+serde               = { version = "1.0", features = ["derive"] }
+serde_json          = "1.0"
+serde-wasm-bindgen  = "0.6"
+wasm-bindgen        = "0.2"
+js-sys              = "0.3"
+web-sys             = { version = "0.3", features = ["console"] }
+
+# ─── diff impl  ────────────────────────────────────────────────────────
+regex               = "1"
+memchr              = "2"
+lazy_static         = "1.4"      # ← restore (needed by util/string & word tokenizer)
+once_cell           = "1"
+unicode-segmentation = "1.12"
+
+# ─── wasm/dev ──────────────────────────────────────────────────────────
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+wasm-bindgen-test = "0.3"
+fastrand = "2.0"
+
+[features]
+default            = ["console_error_panic_hook"]
+debug_logs         = []
+
+[profile.release]
+opt-level      = 3
+lto            = "fat"
+codegen-units  = 1
+
+# Tarpaulin coverage configuration
+[package.metadata.tarpaulin]
+exclude = ["target/*", "pkg/*", "pkg-web/*", "dist/*", "tests/*"]
+exclude-files = ["src/browser-index.js", "src/node-index.js", "src/esm-index.js"]
+# Skip integration tests that require WASM runtime
+avoid-cfg-tarpaulin = true
+# Include all source files
+include = ["src/*"]
+# Generate comprehensive reports
+verbose = true
+workspace = true

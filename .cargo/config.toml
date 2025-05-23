@@ -1,0 +1,19 @@
+# Apple Silicon (M-series) – native build
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+# Intel macOS – when cross-compiling from Apple Silicon
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+# WebAssembly – enable 128-bit SIMD for all wasm targets
+[target.wasm32-unknown-unknown]
+rustflags = [
+  "-C", "target-feature=+simd128",
+]

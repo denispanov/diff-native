@@ -1,0 +1,107 @@
+{
+  "name": "diff-native",
+  "version": "0.1.0",
+  "description": "High-performance text diffing library built with Rust and WebAssembly",
+  "license": "MIT",
+  "author": "Denis Panov",
+  "type": "module",
+  "keywords": [
+    "diff",
+    "text-diff",
+    "diff-algorithm",
+    "patch",
+    "wasm",
+    "rust",
+    "webassembly",
+    "myers",
+    "jsdiff",
+    "bun"
+  ],
+  "main": "dist/node/index.js",
+  "module": "dist/esm/index.js",
+  "browser": "dist/browser/index.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "node": "./dist/node/index.js",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/node/index.js",
+      "types": "./types/index.d.ts",
+      "browser": "./dist/browser/index.js",
+      "default": "./dist/browser/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "types/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rimraf dist pkg pkg-web",
+    "build:wasm:node": "wasm-pack build --target nodejs --out-dir pkg",
+    "build:wasm:web": "wasm-pack build --target web --out-dir pkg-web",
+    "build:ts": "tsc",
+    "build:node": "mkdir -p dist/node && cp -r pkg/* dist/node/ && cp src/node-index.js dist/node/index.js",
+    "build:browser": "mkdir -p dist/browser && cp -r pkg-web/* dist/browser/ && cp src/browser-index.js dist/browser/index.js",
+    "build:esm": "mkdir -p dist/esm && cp -r pkg-web/* dist/esm/ && cp src/esm-index.js dist/esm/index.js",
+    "build": "bun run clean && bun run build:wasm:node && bun run build:wasm:web && bun run build:ts && bun run build:node && bun run build:browser && bun run build:esm",
+    "test": "bun test",
+    "test:rust": "cargo test --lib",
+    "test:coverage": "cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out html",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,ts,json}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json}\"",
+    "fmt:rust": "cargo fmt --all -- --check",
+    "check": "bun run lint && bun run format:check && bun run fmt:rust",
+    "fix": "bun run lint:fix && bun run format && cargo fmt --all",
+    "prepublishOnly": "bun run build && bun run check",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@types/diff": "^7.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "bun-types": "latest",
+    "diff": "^7.0.0",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.0.0",
+    "prettier": "^3.5.3",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/denispanov/diff-native.git"
+  },
+  "bugs": {
+    "url": "https://github.com/denispanov/diff-native/issues"
+  },
+  "homepage": "https://github.com/denispanov/diff-native#readme",
+  "trustedDependencies": [
+    "wasm-pack"
+  ],
+  "dependencies": {
+    "wasm-pack": "^0.13.1"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.json": [
+      "prettier --write"
+    ],
+    "*.rs": [
+      "cargo fmt --"
+    ]
+  }
+}

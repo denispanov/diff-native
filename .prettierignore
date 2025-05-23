@@ -1,0 +1,16 @@
+# Build artifacts
+dist/
+pkg/
+pkg-web/
+target/
+node_modules/
+
+# Generated files
+*.wasm
+
+# Rust files (these should be formatted with rustfmt)
+**/*.rs
+
+# Documentation
+README.md
+LICENSE
