@@ -9,9 +9,8 @@ struct TestCase<'a> {
     expected_tokens: Vec<&'a str>,
 }
 
-#[test]
-fn test_word_tokenizer_standard_behavior() {
-    let test_cases = vec![
+fn standard_test_cases() -> Vec<TestCase<'static>> {
+    vec![
         TestCase {
             name: "Empty string",
             input: "",
@@ -92,7 +91,12 @@ fn test_word_tokenizer_standard_behavior() {
             input: ".,;:!?",
             expected_tokens: vec![".", ",", ";", ":", "!", "?"],
         },
-    ];
+    ]
+}
+
+#[test]
+fn test_word_tokenizer_standard_behavior() {
+    let test_cases = standard_test_cases();
 
     for test_case in test_cases {
         let tokenizer = WordTokenizer;
