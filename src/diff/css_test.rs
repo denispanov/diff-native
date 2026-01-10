@@ -3,7 +3,7 @@ use super::css::CssTokenizer;
 
 #[test]
 fn test_empty_string() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let tokens = tokenizer.tokenize("", &mut arena);
@@ -12,7 +12,7 @@ fn test_empty_string() {
 
 #[test]
 fn test_single_delimiters() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let delimiters = vec!["{", "}", ":", ";", ","];
 
@@ -26,7 +26,7 @@ fn test_single_delimiters() {
 
 #[test]
 fn test_whitespace() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let whitespace_cases = vec![" ", "  ", "\n", "\t", "\n\t "];
 
@@ -41,7 +41,7 @@ fn test_whitespace() {
 
 #[test]
 fn test_simple_css() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let input = "div{color:red;}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -58,7 +58,7 @@ fn test_simple_css() {
 
 #[test]
 fn test_css_with_whitespace() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let input = "div {\n  color: red;\n}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -79,7 +79,7 @@ fn test_css_with_whitespace() {
 
 #[test]
 fn test_multiple_selectors() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let input = "div,span{color:red;}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -98,7 +98,7 @@ fn test_multiple_selectors() {
 
 #[test]
 fn test_multiple_properties() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = "div{color:red;background:blue;}";
@@ -121,7 +121,7 @@ fn test_multiple_properties() {
 
 #[test]
 fn test_complex_css() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let input = "@media screen { div { color: #ff0000; } }";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -141,7 +141,7 @@ fn test_complex_css() {
 
 #[test]
 fn test_pseudoclasses_and_elements() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = "div::after{content:\"👍\";}";
@@ -162,7 +162,7 @@ fn test_pseudoclasses_and_elements() {
 
 #[test]
 fn test_css_variables() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = "div{color:var(--main-color);}";
@@ -180,7 +180,7 @@ fn test_css_variables() {
 
 #[test]
 fn test_css_comments() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = "/* comment */ div{color:red;}";
@@ -198,7 +198,7 @@ fn test_css_comments() {
 
 #[test]
 fn test_mixed_whitespace() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = "div  {\n\t  color :  red  ;  }";
@@ -222,7 +222,7 @@ fn test_mixed_whitespace() {
 
 #[test]
 fn test_complex_selectors() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
     let input = "div > p + ul, section article {display:flex}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -252,7 +252,7 @@ fn test_complex_selectors() {
 
 #[test]
 fn test_css_test_case() {
-    let tokenizer = CssTokenizer::default();
+    let tokenizer = CssTokenizer;
     let mut arena = Vec::new();
 
     let input = ".test,#value .test{margin-left:50px;margin-right:-40px}";

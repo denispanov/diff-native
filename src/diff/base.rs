@@ -69,10 +69,7 @@ pub trait Tokeniser<'a> {
 
 #[inline(always)]
 fn ascii_eq_ignore_case(a: &[u8], b: &[u8]) -> bool {
-    a.len() == b.len()
-        && a.iter()
-            .zip(b)
-            .all(|(x, y)| x.to_ascii_lowercase() == y.to_ascii_lowercase())
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_ignore_ascii_case(y))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -180,7 +177,7 @@ impl<'a, T: Tokeniser<'a>> Diff<'a, T> {
             );
         }
 
-        return self.run_myers(a_len, b_len, a, b);
+        self.run_myers(a_len, b_len, a, b)
     }
 
     #[inline(always)]
@@ -368,18 +365,12 @@ impl<'a, T: Tokeniser<'a>> Diff<'a, T> {
                 let idx = (k + offset) as usize;
 
                 let remove_path = if idx > 0 { v[idx - 1].take() } else { None };
-                let add_path = if idx + 1 < size {
-                    v[idx + 1].clone()
-                } else {
-                    None
-                };
+                let add_path = if idx + 1 < size { v[idx + 1] } else { None };
 
                 let can_add = add_path
                     .as_ref()
-                    .map_or(false, |p| (0..b_len).contains(&(p.old_pos - k)));
-                let can_remove = remove_path
-                    .as_ref()
-                    .map_or(false, |p| p.old_pos + 1 < a_len);
+                    .is_some_and(|p| (0..b_len).contains(&(p.old_pos - k)));
+                let can_remove = remove_path.as_ref().is_some_and(|p| p.old_pos + 1 < a_len);
 
                 if !can_add && !can_remove {
                     v[idx] = None;
@@ -396,8 +387,7 @@ impl<'a, T: Tokeniser<'a>> Diff<'a, T> {
                     self.extend_path(remove_path.unwrap(), false, true, 1, &mut comps)
                 };
 
-                let new_pos_after =
-                    self.extract_common(&mut v[idx].insert(base), b, a, k, &mut comps);
+                let new_pos_after = self.extract_common(v[idx].insert(base), b, a, k, &mut comps);
 
                 let p = v[idx].as_ref().unwrap();
                 if p.old_pos + 1 >= a_len && new_pos_after + 1 >= b_len {

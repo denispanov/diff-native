@@ -226,7 +226,7 @@ fn test_reverse_patch_array_behavior() {
         ],
     );
 
-    let original_patches = vec![patch1.clone(), patch2.clone()];
+    let original_patches = [patch1.clone(), patch2.clone()];
     let mut reversed: Vec<Patch> = original_patches.iter().map(reverse_single).collect();
     reversed.reverse();
     assert_eq!(reversed.len(), 2);

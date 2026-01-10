@@ -35,8 +35,8 @@ fn test_unix_only_patch() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), true);
-    assert_eq!(is_win_internal(&patch), false);
+    assert!(is_unix_internal(&patch));
+    assert!(!is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     assert_eq!(
         win_patch.hunks[0].lines,
@@ -78,8 +78,8 @@ fn test_windows_only_patch() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), false);
-    assert_eq!(is_win_internal(&patch), true);
+    assert!(!is_unix_internal(&patch));
+    assert!(is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     assert_eq!(
         win_patch.hunks[0].lines,
@@ -116,8 +116,8 @@ fn test_mixed_line_endings_patch() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), false);
-    assert_eq!(is_win_internal(&patch), false);
+    assert!(!is_unix_internal(&patch));
+    assert!(!is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     assert_eq!(
         win_patch.hunks[0].lines,
@@ -159,8 +159,8 @@ fn test_patch_with_no_newline_markers() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), true);
-    assert_eq!(is_win_internal(&patch), false);
+    assert!(is_unix_internal(&patch));
+    assert!(!is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     assert_eq!(
         win_patch.hunks[0].lines,
@@ -194,8 +194,8 @@ fn test_empty_patch() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), true);
-    assert_eq!(is_win_internal(&patch), false);
+    assert!(is_unix_internal(&patch));
+    assert!(!is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     let unix_patch = win_to_unix_internal(&patch);
 
@@ -235,8 +235,8 @@ fn test_multiple_hunks_patch() {
 }"#;
 
     let patch = parse_patch_from_str(patch_str);
-    assert_eq!(is_unix_internal(&patch), false);
-    assert_eq!(is_win_internal(&patch), false);
+    assert!(!is_unix_internal(&patch));
+    assert!(!is_win_internal(&patch));
     let win_patch = unix_to_win_internal(&patch);
     assert_eq!(
         win_patch.hunks[0].lines,

@@ -33,11 +33,7 @@ fn is_word_char(c: char) -> bool {
 #[inline(always)]
 fn ascii_eq_ignore_case(a: &str, b: &str) -> bool {
     let (ab, bb) = (a.as_bytes(), b.as_bytes());
-    ab.len() == bb.len()
-        && ab
-            .iter()
-            .zip(bb)
-            .all(|(x, y)| x.to_ascii_lowercase() == y.to_ascii_lowercase())
+    ab.len() == bb.len() && ab.iter().zip(bb).all(|(x, y)| x.eq_ignore_ascii_case(y))
 }
 
 #[derive(Default)]
@@ -368,9 +364,9 @@ pub fn diff_words(old: &str, new_: &str, opts: JsValue) -> Result<JsValue, JsVal
             return swb::to_value(&empty).map_err(Into::into);
         }
         let cnt = if use_with_space {
-            count_tokens(&WordWithSpaceTokenizer::default(), new_)
+            count_tokens(&WordWithSpaceTokenizer, new_)
         } else {
-            count_tokens(&WordTokenizer::default(), new_)
+            count_tokens(&WordTokenizer, new_)
         };
         let changes = vec![Change {
             value: new_.to_string(),
@@ -383,10 +379,10 @@ pub fn diff_words(old: &str, new_: &str, opts: JsValue) -> Result<JsValue, JsVal
 
     use super::memory_pool::PooledDiff;
     let changes = if use_with_space {
-        let mut diff = PooledDiff::new(WordWithSpaceTokenizer::default(), base_opts);
+        let mut diff = PooledDiff::new(WordWithSpaceTokenizer, base_opts);
         diff.diff(old, new_)
     } else {
-        let mut diff = PooledDiff::new(WordTokenizer::default(), base_opts);
+        let mut diff = PooledDiff::new(WordTokenizer, base_opts);
         diff.diff(old, new_)
     };
     swb::to_value(&changes).map_err(|e| JsValue::from(e.to_string()))
@@ -407,7 +403,7 @@ pub fn diff_words_with_space(old: &str, new_: &str, opts: JsValue) -> Result<JsV
             let empty: Vec<Change> = Vec::new();
             return swb::to_value(&empty).map_err(Into::into);
         }
-        let cnt = count_tokens(&WordWithSpaceTokenizer::default(), new_);
+        let cnt = count_tokens(&WordWithSpaceTokenizer, new_);
         let changes = vec![Change {
             value: new_.to_string(),
             count: cnt,
@@ -418,7 +414,7 @@ pub fn diff_words_with_space(old: &str, new_: &str, opts: JsValue) -> Result<JsV
     }
 
     use super::memory_pool::PooledDiff;
-    let mut diff = PooledDiff::new(WordWithSpaceTokenizer::default(), base_opts);
+    let mut diff = PooledDiff::new(WordWithSpaceTokenizer, base_opts);
     let changes = diff.diff(old, new_);
     swb::to_value(&changes).map_err(|e| JsValue::from(e.to_string()))
 }
@@ -430,7 +426,7 @@ pub struct WordDiff;
 impl WordDiff {
     #[wasm_bindgen(js_name = tokenize)]
     pub fn tokenize_js(text: &str) -> Result<JsValue, JsValue> {
-        let tok = WordTokenizer::default();
+        let tok = WordTokenizer;
         let mut arena = Vec::new();
         let toks = tok.tokenize(text, &mut arena);
         let vec: Vec<&str> = toks.iter().map(|t| t.text).collect();

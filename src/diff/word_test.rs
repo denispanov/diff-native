@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::diff::base::{Options, Tokeniser};
 use crate::diff::token::Token;
 use crate::diff::word::WordTokenizer;
@@ -97,7 +95,7 @@ fn test_word_tokenizer_standard_behavior() {
     ];
 
     for test_case in test_cases {
-        let tokenizer = WordTokenizer::default();
+        let tokenizer = WordTokenizer;
         let mut arena = Vec::new();
 
         let tokens = tokenizer.tokenize(test_case.input, &mut arena);
@@ -130,7 +128,7 @@ fn test_word_tokenizer_standard_behavior() {
 
 #[test]
 fn test_word_tokenizer_equals_behavior() {
-    let tokenizer = WordTokenizer::default();
+    let tokenizer = WordTokenizer;
     let options = Options {
         ignore_case: false,
         one_change_per_token: false,
@@ -162,7 +160,7 @@ fn test_word_tokenizer_equals_behavior() {
 
 #[test]
 fn test_word_tokenizer_join_behavior() {
-    let tokenizer = WordTokenizer::default();
+    let tokenizer = WordTokenizer;
 
     let tokens = vec![
         Token { text: "hello " },

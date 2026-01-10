@@ -104,8 +104,8 @@ pub(crate) fn apply_patch_internal(
                 break;
             }
 
-            let mut iter = DistanceIterator::new(start_pos, min_line, max_line);
-            while let Some(pos) = iter.next() {
+            let iter = DistanceIterator::new(start_pos, min_line, max_line);
+            for pos in iter {
                 if pos != start_pos {
                     if let Some(r) = try_apply_hunk_with_options(h, &lines, pos, max_err, options) {
                         applied = Some((pos, r.patched_lines, r.old_line_last_i));
@@ -142,7 +142,7 @@ pub(crate) fn apply_patch_internal(
     // Special case: when source was empty and we added content, ensure trailing newline
     if source.is_empty() && !output.is_empty() && !output.ends_with('\n') {
         // Check if patch explicitly specifies no newline at end
-        let has_explicit_no_eofnl = patch.hunks.last().map_or(false, |h| {
+        let has_explicit_no_eofnl = patch.hunks.last().is_some_and(|h| {
             h.lines
                 .windows(2)
                 .any(|w| w[0].starts_with('+') && w[1] == "\\ No newline at end of file")
@@ -376,7 +376,7 @@ fn apply_hunk_rec(
                 n_consecutive_ctx = 0;
                 next_ctx_must_match = true;
             }
-            ' ' | _ => {
+            _ => {
                 n_consecutive_ctx += 1;
                 let source_line = if let Some(l) = lines.get(to_pos as usize) {
                     l.clone()

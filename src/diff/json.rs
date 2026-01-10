@@ -87,7 +87,7 @@ pub fn canonicalize(js_val: JsValue) -> Result<JsValue, JsValue> {
     let val: serde_json::Value = swb::from_value(js_val)?;
     let canon = canonicalize_value(&val);
     let as_string = serde_json::to_string(&canon).unwrap();
-    JSON::parse(&as_string).map_err(Into::into)
+    JSON::parse(&as_string)
 }
 
 fn to_pretty_json(val: &JsValue, opts: &JsonOptions) -> Result<String, JsValue> {
