@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
+import type { ApplyOptions, StructuredPatch } from 'diff-native';
+import type * as DiffNative from 'diff-native';
 import { getWasmModule } from '../setup';
-import type { StructuredPatch, ApplyOptions } from 'diff-native';
-import * as DiffNative from 'diff-native';
 
 let wasm: typeof DiffNative;
 beforeAll(async () => {
@@ -965,7 +965,7 @@ describe('patch/apply - #applyPatches full suite', () => {
       loadFile(index, cb) {
         cb(undefined, contents[index.oldFileName!]);
       },
-      patched(index, _content, cb) {
+      patched(_index, _content, cb) {
         cb(errExpected);
       },
       complete(err) {

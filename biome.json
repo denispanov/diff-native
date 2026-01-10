@@ -1,0 +1,72 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignore": [
+      "dist/**",
+      "pkg/**",
+      "pkg-web/**",
+      "node_modules/**",
+      "target/**",
+      ".husky/**",
+      "*.wasm",
+      "jsdiff/**"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "style": {
+        "noParameterAssign": "off",
+        "useTemplate": "off",
+        "noNonNullAssertion": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "es5",
+      "arrowParentheses": "asNeeded",
+      "bracketSpacing": true,
+      "semicolons": "always"
+    }
+  },
+  "overrides": [
+    {
+      "include": ["**/*.d.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
+}

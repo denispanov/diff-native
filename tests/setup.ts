@@ -1,6 +1,6 @@
+import type { Change, DiffLinesOptions, DiffOptions } from 'diff-native';
+import type * as DiffNative from 'diff-native';
 import { loadWasmModule } from './utils/wasm-loader';
-import type { Change, DiffOptions, DiffLinesOptions } from 'diff-native';
-import * as DiffNative from 'diff-native';
 
 export type { Change, DiffOptions, DiffLinesOptions };
 

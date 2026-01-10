@@ -68,10 +68,8 @@ pub fn structured_patch(
         let mut result: Vec<String> = s.split('\n').map(|line| format!("{}\n", line)).collect();
         if has_trailing_nl {
             result.pop();
-        } else {
-            if let Some(last) = result.last_mut() {
-                *last = last[..last.len() - 1].to_string();
-            }
+        } else if let Some(last) = result.last_mut() {
+            *last = last[..last.len() - 1].to_string();
         }
         result
     };

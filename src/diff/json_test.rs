@@ -4,7 +4,7 @@ use super::token::Token;
 
 #[test]
 fn test_empty_string() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let mut arena = Vec::new();
     let tokens = tokenizer.tokenize("", &mut arena);
     assert_eq!(tokens.len(), 0);
@@ -12,7 +12,7 @@ fn test_empty_string() {
 
 #[test]
 fn test_single_line_json() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let mut arena = Vec::new();
     let input = r#"{"key":"value"}"#;
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -24,7 +24,7 @@ fn test_single_line_json() {
 
 #[test]
 fn test_multiline_json() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let mut arena = Vec::new();
     let input = "{\n  \"key\": \"value\"\n}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -38,7 +38,7 @@ fn test_multiline_json() {
 
 #[test]
 fn test_complex_json() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let mut arena = Vec::new();
     let input = "{\n  \"name\": \"John\",\n  \"age\": 30,\n  \"address\": {\n    \"street\": \"123 Main St\",\n    \"city\": \"Anytown\"\n  },\n  \"phones\": [\n    \"123-456-7890\",\n    \"098-765-4321\"\n  ]\n}";
 
@@ -61,7 +61,7 @@ fn test_complex_json() {
 
 #[test]
 fn test_trailing_comma_tolerance() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let options = Options::default();
     let a = Token {
         text: "  \"key\": \"value\"\n",
@@ -82,7 +82,7 @@ fn test_trailing_comma_tolerance() {
 
 #[test]
 fn test_differing_content_not_equal() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let options = Options::default();
     let a = Token {
         text: "  \"key\": \"value1\"\n",
@@ -95,7 +95,7 @@ fn test_differing_content_not_equal() {
 
 #[test]
 fn test_comma_in_middle_not_ignored() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let options = Options::default();
     let a = Token {
         text: "  \"key1\": \"value1\"\n",
@@ -166,7 +166,7 @@ fn test_canonicalize_arrays() {
 
 #[test]
 fn test_join_function() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let tokens = vec![
         Token { text: "{\n" },
         Token {
@@ -182,7 +182,7 @@ fn test_join_function() {
 
 #[test]
 fn test_real_world_example() {
-    let tokenizer = JsonTokenizer::default();
+    let tokenizer = JsonTokenizer;
     let mut arena = Vec::new();
 
     let input = "{\n  \"a\": 123,\n  \"b\": 456,\n  \"c\": 789\n}";

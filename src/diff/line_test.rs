@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::diff::base::{Options, Tokeniser};
 use crate::diff::line::LineTokenizer;
 use crate::diff::token::Token;
@@ -11,22 +9,12 @@ struct TestCase<'a> {
     expected_tokens: Vec<&'a str>,
 }
 
+#[derive(Default)]
 struct TokenizerOptions {
     newline_is_token: bool,
     strip_trailing_cr: bool,
     ignore_whitespace: bool,
     ignore_newline_at_eof: bool,
-}
-
-impl Default for TokenizerOptions {
-    fn default() -> Self {
-        Self {
-            newline_is_token: false,
-            strip_trailing_cr: false,
-            ignore_whitespace: false,
-            ignore_newline_at_eof: false,
-        }
-    }
 }
 
 fn preprocess_input(input: &str, strip_trailing_cr: bool) -> String {

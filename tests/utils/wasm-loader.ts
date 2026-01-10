@@ -6,7 +6,7 @@ export async function loadWasmModule<T>(): Promise<T> {
 
     return module as unknown as T;
   } catch (error) {
-    console.error(`Failed to load WebAssembly module:`, error);
+    console.error('Failed to load WebAssembly module:', error);
     throw error;
   }
 }

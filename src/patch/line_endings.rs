@@ -45,7 +45,7 @@ pub(crate) fn unix_to_win_internal(p: &Patch) -> Patch {
         for (i, line) in h.lines.iter().enumerate() {
             if line.starts_with('\\')
                 || line.ends_with('\r')
-                || h.lines.get(i + 1).map_or(false, |n| n.starts_with('\\'))
+                || h.lines.get(i + 1).is_some_and(|n| n.starts_with('\\'))
             {
                 nl.push(line.clone());
             } else {

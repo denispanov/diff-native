@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::diff::base::{Options, Tokeniser};
 use crate::diff::sentences::SentenceTokenizer;
 use crate::diff::token::Token;
@@ -168,7 +166,7 @@ fn test_sentence_tokenizer_matches_expected() {
     ];
 
     for test_case in test_cases {
-        let tokenizer = SentenceTokenizer::default();
+        let tokenizer = SentenceTokenizer;
         let mut arena = Vec::new();
 
         let tokens = tokenizer.tokenize(test_case.input, &mut arena);
@@ -267,7 +265,7 @@ fn test_sentence_tokenizer_equals_with_options() {
     ];
 
     for test_case in test_cases {
-        let tokenizer = SentenceTokenizer::default();
+        let tokenizer = SentenceTokenizer;
 
         let tok_left = Token {
             text: test_case.left,
@@ -287,7 +285,7 @@ fn test_sentence_tokenizer_equals_with_options() {
 }
 #[test]
 fn test_sentence_tokenizer_join_edge_cases() {
-    let tokenizer = SentenceTokenizer::default();
+    let tokenizer = SentenceTokenizer;
     let empty_tokens: Vec<Token> = vec![];
     assert_eq!(tokenizer.join(&empty_tokens), "");
     let single_token = vec![Token {
