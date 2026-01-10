@@ -217,26 +217,22 @@ The build process creates several distribution formats:
 
 ### Code Quality
 
-This project uses several tools to maintain code quality:
+This project uses [Biome](https://biomejs.dev/) for JavaScript/TypeScript linting and formatting, and [Clippy](https://github.com/rust-lang/rust-clippy) for Rust linting:
 
 ```bash
-# Run ESLint to check code
-bun run lint
-
-# Fix ESLint issues automatically
-bun run lint:fix
-
-# Format code with Prettier
-bun run format
-
-# Check formatting without changing files
-bun run format:check
-
-# Run both linting and format checking
+# Run all checks (biome + cargo fmt + clippy)
 bun run check
 
 # Fix all linting and formatting issues
 bun run fix
+
+# JavaScript/TypeScript (Biome)
+bun run lint           # Lint only
+bun run format         # Format code
+
+# Rust
+cargo fmt              # Format code
+cargo clippy           # Lint code
 ```
 
 Husky and lint-staged are configured to automatically check code quality before each commit.

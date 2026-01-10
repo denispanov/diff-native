@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
+import type * as DiffNative from 'diff-native';
 import { getWasmModule } from '../setup';
-import * as DiffNative from 'diff-native';
 
 let wasm: typeof DiffNative;
 beforeAll(async () => {

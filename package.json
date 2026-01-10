@@ -31,12 +31,7 @@
       "default": "./dist/browser/index.js"
     }
   },
-  "files": [
-    "dist/",
-    "types/",
-    "LICENSE",
-    "README.md"
-  ],
+  "files": ["dist/", "types/", "LICENSE", "README.md"],
   "scripts": {
     "clean": "rimraf dist pkg pkg-web",
     "build:wasm:node": "wasm-pack build --target nodejs --out-dir pkg",
@@ -49,31 +44,25 @@
     "test": "bun test",
     "test:rust": "cargo test --lib",
     "test:coverage": "cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out html",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{js,ts,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json}\"",
-    "fmt:rust": "cargo fmt --all -- --check",
-    "check": "bun run lint && bun run format:check && bun run fmt:rust",
-    "fix": "bun run lint:fix && bun run format && cargo fmt --all",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "clippy": "cargo clippy --all-targets --all-features -- -D warnings",
+    "check": "biome check . && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
+    "fix": "biome check --write . && cargo fmt --all && cargo clippy --fix --allow-dirty --allow-staged",
     "prepublishOnly": "bun run build && bun run check",
     "prepare": "husky"
   },
   "devDependencies": {
-    "@eslint/js": "^9.27.0",
+    "@biomejs/biome": "^1.9.4",
     "@types/diff": "^7.0.2",
-    "@typescript-eslint/eslint-plugin": "^8.32.1",
-    "@typescript-eslint/parser": "^8.32.1",
     "bun-types": "latest",
     "diff": "^7.0.0",
-    "eslint": "^9.27.0",
-    "eslint-config-prettier": "^10.1.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "prettier": "^3.5.3",
     "rimraf": "^5.0.1",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.32.1"
+    "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -86,22 +75,12 @@
     "url": "https://github.com/denispanov/diff-native/issues"
   },
   "homepage": "https://github.com/denispanov/diff-native#readme",
-  "trustedDependencies": [
-    "wasm-pack"
-  ],
+  "trustedDependencies": ["wasm-pack"],
   "dependencies": {
     "wasm-pack": "^0.13.1"
   },
   "lint-staged": {
-    "*.{js,ts}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.json": [
-      "prettier --write"
-    ],
-    "*.rs": [
-      "cargo fmt --"
-    ]
+    "*.{js,ts,json}": ["biome check --write --no-errors-on-unmatched"],
+    "*.rs": ["cargo fmt --"]
   }
 }

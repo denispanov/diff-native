@@ -56,6 +56,5 @@ tsconfig.tsbuildinfo
 # Husky
 .husky/_
 
-**/.claude/settings.local.json
-.cursor/rules/
-CLAUDE.md
+CLAUDE.local.md
+jsdiff/

@@ -118,7 +118,7 @@ pub fn diff_sentences(old_str: &str, new_str: &str, opts: JsValue) -> Result<JsV
     let options: Options = s_opts.into();
 
     use super::memory_pool::PooledDiff;
-    let mut diff = PooledDiff::new(SentenceTokenizer::default(), options);
+    let mut diff = PooledDiff::new(SentenceTokenizer, options);
     let changes = diff.diff(old_str, new_str);
 
     swb::to_value(&changes).map_err(|e| JsValue::from(e.to_string()))
@@ -131,7 +131,7 @@ pub struct SentenceDiff;
 impl SentenceDiff {
     #[wasm_bindgen(js_name = tokenize)]
     pub fn tokenize_js(text: &str) -> Result<JsValue, JsValue> {
-        let tok = SentenceTokenizer::default();
+        let tok = SentenceTokenizer;
         let mut arena = Vec::new();
         let toks = tok.tokenize(text, &mut arena);
         let vec: Vec<&str> = toks.iter().map(|t| t.text).collect();

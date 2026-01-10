@@ -67,7 +67,7 @@ pub fn remove_suffix(s: &str, old: &str) -> String {
 pub fn maximum_overlap<'a>(a: &'a str, b: &'a str) -> &'a str {
     let max = a.len().min(b.len());
     for i in (1..=max).rev() {
-        if &a[a.len() - i..] == &b[..i] {
+        if a[a.len() - i..] == b[..i] {
             return &b[..i];
         }
     }

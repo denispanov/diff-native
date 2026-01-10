@@ -268,10 +268,8 @@ impl<'a, T: Tokeniser<'a>> PooledDiff<'a, T> {
 
                 let can_add = add_path
                     .as_ref()
-                    .map_or(false, |p| (0..b_len).contains(&(p.old_pos - k)));
-                let can_remove = remove_path
-                    .as_ref()
-                    .map_or(false, |p| p.old_pos + 1 < a_len);
+                    .is_some_and(|p| (0..b_len).contains(&(p.old_pos - k)));
+                let can_remove = remove_path.as_ref().is_some_and(|p| p.old_pos + 1 < a_len);
 
                 if !can_add && !can_remove {
                     self.paths[idx] = None;

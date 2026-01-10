@@ -38,7 +38,7 @@ module.exports = {
      * When called, Rust panics will show detailed error messages in the console
      * instead of generic "RuntimeError: Unreachable executed" messages
      */
-    enablePanicReporting: function () {
+    enablePanicReporting: () => {
       try {
         diffNative.set_panic_hook();
         return true;
