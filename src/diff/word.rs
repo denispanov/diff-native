@@ -1,5 +1,3 @@
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::Deserialize;
 use serde_wasm_bindgen as swb;
 use wasm_bindgen::prelude::*;
@@ -31,9 +29,150 @@ fn is_word_char(c: char) -> bool {
 }
 
 #[inline(always)]
+fn is_ascii_word(b: u8) -> bool {
+    matches!(b, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_')
+}
+
+#[inline(always)]
+fn is_ascii_whitespace(b: u8) -> bool {
+    matches!(b, b' ' | b'\t' | b'\n' | b'\r' | 0x0B | 0x0C)
+}
+
+#[inline(always)]
+fn is_ascii_whitespace_no_nl(b: u8) -> bool {
+    matches!(b, b' ' | b'\t' | 0x0B | 0x0C)
+}
+
+#[inline(always)]
 fn ascii_eq_ignore_case(a: &str, b: &str) -> bool {
     let (ab, bb) = (a.as_bytes(), b.as_bytes());
     ab.len() == bb.len() && ab.iter().zip(bb).all(|(x, y)| x.eq_ignore_ascii_case(y))
+}
+
+#[inline(always)]
+fn scan_whitespace(text: &str, bytes: &[u8], mut pos: usize) -> usize {
+    let len = bytes.len();
+    while pos < len {
+        let b = bytes[pos];
+        if b < 0x80 {
+            if is_ascii_whitespace(b) {
+                pos += 1;
+                continue;
+            }
+            break;
+        }
+        let ch = text[pos..].chars().next().unwrap();
+        if ch.is_whitespace() {
+            pos += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    pos
+}
+
+#[inline(always)]
+fn scan_whitespace_no_nl(text: &str, bytes: &[u8], mut pos: usize) -> usize {
+    let len = bytes.len();
+    while pos < len {
+        let b = bytes[pos];
+        if b < 0x80 {
+            if is_ascii_whitespace_no_nl(b) {
+                pos += 1;
+                continue;
+            }
+            break;
+        }
+        let ch = text[pos..].chars().next().unwrap();
+        if ch.is_whitespace() && ch != '\n' && ch != '\r' {
+            pos += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    pos
+}
+
+#[inline(always)]
+fn scan_word_run(text: &str, bytes: &[u8], mut pos: usize) -> usize {
+    let len = bytes.len();
+    while pos < len {
+        let b = bytes[pos];
+        if b < 0x80 {
+            if is_ascii_word(b) {
+                pos += 1;
+                continue;
+            }
+            break;
+        }
+        let ch = text[pos..].chars().next().unwrap();
+        if is_word_char(ch) {
+            pos += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    pos
+}
+
+#[inline(always)]
+fn scan_word_token(text: &str, bytes: &[u8], pos: usize) -> (usize, bool) {
+    // Keep jsdiff-compatible token boundaries while fast-pathing ASCII.
+    let b = bytes[pos];
+    if b < 0x80 {
+        if is_ascii_whitespace(b) {
+            return (scan_whitespace(text, bytes, pos), true);
+        }
+        if is_ascii_word(b) {
+            return (scan_word_run(text, bytes, pos), false);
+        }
+        return (pos + 1, false);
+    }
+
+    let ch = text[pos..].chars().next().unwrap();
+    if ch.is_whitespace() {
+        return (scan_whitespace(text, bytes, pos), true);
+    }
+    if is_word_char(ch) {
+        return (scan_word_run(text, bytes, pos), false);
+    }
+    (pos + ch.len_utf8(), false)
+}
+
+#[inline(always)]
+fn scan_word_with_space_token(text: &str, bytes: &[u8], pos: usize) -> usize {
+    // Match jsdiff wordWithSpace rules: preserve CRLF and treat newlines as standalone tokens.
+    let b = bytes[pos];
+    if b < 0x80 {
+        if b == b'\r' {
+            if pos + 1 < bytes.len() && bytes[pos + 1] == b'\n' {
+                return pos + 2;
+            }
+            return pos + 1;
+        }
+        if b == b'\n' {
+            return pos + 1;
+        }
+        if is_ascii_word(b) {
+            return scan_word_run(text, bytes, pos);
+        }
+        if is_ascii_whitespace_no_nl(b) {
+            return scan_whitespace_no_nl(text, bytes, pos);
+        }
+        return pos + 1;
+    }
+
+    let ch = text[pos..].chars().next().unwrap();
+    if ch.is_whitespace() {
+        if ch == '\n' || ch == '\r' {
+            return pos + ch.len_utf8();
+        }
+        return scan_whitespace_no_nl(text, bytes, pos);
+    }
+    if is_word_char(ch) {
+        return scan_word_run(text, bytes, pos);
+    }
+    pos + ch.len_utf8()
 }
 
 #[derive(Default)]
@@ -52,40 +191,21 @@ impl<'a> Tokeniser<'a> for WordTokenizer {
             end: usize, // exclusive
         }
 
+        let bytes = text.as_bytes();
+        let len = bytes.len();
+        let mut pos = 0usize;
+
         let mut ranges: Vec<Range> = Vec::new();
 
         let mut prev_is_ws: Option<bool> = None;
         let mut prev_start: usize = 0;
         let mut prev_end: usize = 0;
 
-        let bytes = text.as_bytes();
-        let len = bytes.len();
-        let mut pos = 0usize;
-
         while pos < len {
-            let ch = text[pos..].chars().next().unwrap();
-            let ch_len = ch.len_utf8();
+            // This merging logic is required to preserve jsdiff's whitespace attachment semantics.
             let start = pos;
-            let mut end = pos + ch_len;
-            let is_ws_part = ch.is_whitespace();
-
-            if is_ws_part {
-                while end < len {
-                    let c2 = text[end..].chars().next().unwrap();
-                    if !c2.is_whitespace() {
-                        break;
-                    }
-                    end += c2.len_utf8();
-                }
-            } else if is_word_char(ch) {
-                while end < len {
-                    let c2 = text[end..].chars().next().unwrap();
-                    if !is_word_char(c2) {
-                        break;
-                    }
-                    end += c2.len_utf8();
-                }
-            }
+            let (end, is_ws_part) = scan_word_token(text, bytes, pos);
+            pos = end;
 
             match (is_ws_part, prev_is_ws) {
                 (true, None) => {
@@ -121,7 +241,6 @@ impl<'a> Tokeniser<'a> for WordTokenizer {
             prev_is_ws = Some(is_ws_part);
             prev_start = start;
             prev_end = end;
-            pos = end;
         }
 
         arena.reserve(ranges.len());
@@ -162,25 +281,31 @@ impl<'a> Tokeniser<'a> for WordTokenizer {
     }
 }
 
-static WWS_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(concat!(
-        r"(\r?\n)|[a-zA-Z0-9_\u{C0}-\u{FF}\u{F8}-\u{2C6}\u{2C8}-\u{2D7}\u{2DE}-\u{2FF}\u{1E00}-\u{1EFF}]+",
-        r"|[^\S\n\r]+|[^a-zA-Z0-9_\u{C0}-\u{FF}\u{F8}-\u{2C6}\u{2C8}-\u{2D7}\u{2DE}-\u{2FF}\u{1E00}-\u{1EFF}]"
-    ))
-    .unwrap()
-});
-
 #[derive(Default)]
 pub struct WordWithSpaceTokenizer;
 
 impl<'a> Tokeniser<'a> for WordWithSpaceTokenizer {
     fn tokenize<'b>(&self, value: &'a str, arena: &'b mut Vec<Token<'a>>) -> &'b [Token<'a>] {
         arena.clear();
-        for m in WWS_RE.find_iter(value) {
-            arena.push(Token { text: m.as_str() });
+        if value.is_empty() {
+            return &arena[..];
         }
+
+        let bytes = value.as_bytes();
+        let len = bytes.len();
+        let mut i = 0usize;
+
+        while i < len {
+            let end = scan_word_with_space_token(value, bytes, i);
+            arena.push(Token {
+                text: &value[i..end],
+            });
+            i = end;
+        }
+
         arena
     }
+
     #[inline]
     fn join(&self, toks: &[Token<'a>]) -> String {
         toks.iter().map(|t| t.text).collect()

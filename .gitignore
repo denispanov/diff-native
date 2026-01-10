@@ -58,3 +58,4 @@ tsconfig.tsbuildinfo
 
 CLAUDE.local.md
 jsdiff/
+.worktreeinclude
