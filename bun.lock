@@ -10,6 +10,7 @@
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@types/diff": "^7.0.2",
+        "@types/node": "^22.13.4",
         "bun-types": "latest",
         "diff": "^7.0.0",
         "husky": "^9.1.7",

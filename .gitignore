@@ -20,6 +20,8 @@ Cargo.lock
 /pkg/
 /pkg-web/
 *.tgz
+/bench/results/
+/bench/dist/
 
 # TypeScript build info
 *.tsbuildinfo
