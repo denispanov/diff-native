@@ -1,6 +1,7 @@
-# CLAUDE.md
+# Project Instructions (CLAUDE.md / AGENTS.md)
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working in this repository.
+`AGENTS.md` is a symlink to this file, so these instructions apply to both.
 
 ## Repository Overview
 
@@ -80,15 +81,18 @@ cargo clippy           # Rust linting (strict mode)
 
 ### Benchmarking (Bun + Node)
 
-Benchmarks live under `bench/` and are deterministic (seeded). They always validate `diff-native`
-output against `jsdiff`, then report timing + memory (heap/RSS).
+Use the benchmark suite after core diff/patch changes to verify whether performance improves,
+regresses, or stays flat. Prefer `quick` during iteration and `full` before merging.
+Benchmarks are deterministic (seeded), validate `diff-native` output against `jsdiff`,
+and report timing + memory (heap/RSS).
 
 - Runners: `bench/run-bun.ts` (Bun/TS) and `bench/run-node.mjs` (Node/compiled JS)
 - Cases: `bench/src/cases/` (synthetic + fixtures), fixtures in `bench/fixtures/`
 - Generators: `bench/src/generators/` (text + JSON + RNG) keep cases deterministic
 - Outputs: `bench/results/` (gitignored) and baselines in `bench/baselines/`
+- More details: `bench/README.md`
 
-Note: comparisons are only meaningful when runtime + machine signature match.
+Comparisons are only meaningful when runtime + machine signature match.
 Summaries include both mean speedup and ratio-of-means (the latter is usually the most honest overall).
 
 ```bash
