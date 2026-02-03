@@ -2,7 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { measure } from './measure.js';
 import type { DiffTargetMap } from './targets/diff.js';
 import type { PatchTargetMap } from './targets/patch.js';
-import type { AnyFn, BenchCase, CaseResult, DiffInput, PatchInput } from './types.js';
+import type { BenchCase, CaseResult, DiffInput, PatchInput } from './types.js';
 import { validateDiff, validatePatch } from './validate.js';
 
 export interface RunConfig {
@@ -27,63 +27,53 @@ export async function runCases(
     const iterations = iterationsForCase(config.iterationsBase, benchCase);
 
     if (benchCase.kind === 'diff') {
-      const targets = diffTargets[benchCase.level ?? 'char'];
-      const jsFn: AnyFn = targets.js;
-      const wasmFn: AnyFn = targets.wasm;
+      const diffInput = input as DiffInput;
+      const level = benchCase.level ?? 'char';
 
-      if (config.validate) {
-        const jsOut = jsFn((input as DiffInput).oldValue, (input as DiffInput).newValue);
-        const wasmOut = wasmFn((input as DiffInput).oldValue, (input as DiffInput).newValue);
-        validateDiff(jsOut, wasmOut);
+      switch (level) {
+        case 'char': {
+          const jsFn = diffTargets.char.js;
+          const wasmFn = diffTargets.char.wasm;
+          const args: Parameters<typeof jsFn> = buildStringArgs(diffInput, benchCase.id);
+          results.push(buildDiffResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
+          break;
+        }
+        case 'word': {
+          const jsFn = diffTargets.word.js;
+          const wasmFn = diffTargets.word.wasm;
+          const args: Parameters<typeof jsFn> = buildStringArgs(diffInput, benchCase.id);
+          results.push(buildDiffResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
+          break;
+        }
+        case 'sentence': {
+          const jsFn = diffTargets.sentence.js;
+          const wasmFn = diffTargets.sentence.wasm;
+          const args: Parameters<typeof jsFn> = buildStringArgs(diffInput, benchCase.id);
+          results.push(buildDiffResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
+          break;
+        }
+        case 'line': {
+          const jsFn = diffTargets.line.js;
+          const wasmFn = diffTargets.line.wasm;
+          const args: Parameters<typeof jsFn> = buildStringArgs(diffInput, benchCase.id);
+          results.push(buildDiffResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
+          break;
+        }
+        case 'json': {
+          const jsFn = diffTargets.json.js;
+          const wasmFn = diffTargets.json.wasm;
+          const args: Parameters<typeof jsFn> = buildJsonArgs(diffInput, benchCase.id);
+          results.push(buildDiffResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
+          break;
+        }
       }
-
-      const jsMetrics = measure(
-        jsFn,
-        [(input as DiffInput).oldValue, (input as DiffInput).newValue],
-        iterations
-      );
-      const wasmMetrics = measure(
-        wasmFn,
-        [(input as DiffInput).oldValue, (input as DiffInput).newValue],
-        iterations
-      );
-
-      results.push({
-        id: benchCase.id,
-        kind: 'diff',
-        level: benchCase.level,
-        meta: benchCase.meta,
-        js: jsMetrics,
-        wasm: wasmMetrics,
-        speedup: jsMetrics.meanMs === 0 ? 0 : jsMetrics.meanMs / wasmMetrics.meanMs,
-      });
     } else {
       const patch = patchTargets.createTwoFilesPatch;
       const jsFn = patch.js;
       const wasmFn = patch.wasm;
       const patchInput = input as PatchInput;
 
-      if (config.validate) {
-        const jsOut = jsFn(
-          patchInput.oldFileName,
-          patchInput.newFileName,
-          patchInput.oldStr,
-          patchInput.newStr,
-          patchInput.oldHeader,
-          patchInput.newHeader
-        );
-        const wasmOut = wasmFn(
-          patchInput.oldFileName,
-          patchInput.newFileName,
-          patchInput.oldStr,
-          patchInput.newStr,
-          patchInput.oldHeader,
-          patchInput.newHeader
-        );
-        validatePatch(jsOut, wasmOut);
-      }
-
-      const args = [
+      const args: Parameters<typeof jsFn> = [
         patchInput.oldFileName,
         patchInput.newFileName,
         patchInput.oldStr,
@@ -92,24 +82,93 @@ export async function runCases(
         patchInput.newHeader,
       ];
 
-      const jsMetrics = measure(jsFn, args, iterations);
-      const wasmMetrics = measure(wasmFn, args, iterations);
-
-      results.push({
-        id: benchCase.id,
-        kind: 'patch',
-        level: benchCase.level,
-        meta: benchCase.meta,
-        js: jsMetrics,
-        wasm: wasmMetrics,
-        speedup: jsMetrics.meanMs === 0 ? 0 : jsMetrics.meanMs / wasmMetrics.meanMs,
-      });
+      results.push(buildPatchResult(benchCase, jsFn, wasmFn, args, iterations, config.validate));
     }
 
     console.log(`done (${(performance.now() - tCase).toFixed(1)} ms)`);
   }
 
   return results;
+}
+
+function buildStringArgs(input: DiffInput, id: string): [string, string] {
+  assertString(input.oldValue, `${id}.oldValue`);
+  assertString(input.newValue, `${id}.newValue`);
+  return [input.oldValue, input.newValue];
+}
+
+function buildJsonArgs(input: DiffInput, id: string): [string | object, string | object] {
+  assertJsonValue(input.oldValue, `${id}.oldValue`);
+  assertJsonValue(input.newValue, `${id}.newValue`);
+  return [input.oldValue, input.newValue];
+}
+
+function buildDiffResult<Args extends readonly unknown[], R>(
+  benchCase: BenchCase,
+  jsFn: (...args: Args) => R,
+  wasmFn: (...args: Args) => R,
+  args: Args,
+  iterations: number,
+  validate: boolean
+): CaseResult {
+  if (validate) {
+    const jsOut = jsFn(...args);
+    const wasmOut = wasmFn(...args);
+    validateDiff(jsOut, wasmOut);
+  }
+
+  const jsMetrics = measure(jsFn, args, iterations);
+  const wasmMetrics = measure(wasmFn, args, iterations);
+
+  return {
+    id: benchCase.id,
+    kind: 'diff',
+    level: benchCase.level,
+    meta: benchCase.meta,
+    js: jsMetrics,
+    wasm: wasmMetrics,
+    speedup: jsMetrics.meanMs === 0 ? 0 : jsMetrics.meanMs / wasmMetrics.meanMs,
+  };
+}
+
+function buildPatchResult<Args extends readonly unknown[], R>(
+  benchCase: BenchCase,
+  jsFn: (...args: Args) => R,
+  wasmFn: (...args: Args) => R,
+  args: Args,
+  iterations: number,
+  validate: boolean
+): CaseResult {
+  if (validate) {
+    const jsOut = jsFn(...args);
+    const wasmOut = wasmFn(...args);
+    validatePatch(jsOut, wasmOut);
+  }
+
+  const jsMetrics = measure(jsFn, args, iterations);
+  const wasmMetrics = measure(wasmFn, args, iterations);
+
+  return {
+    id: benchCase.id,
+    kind: 'patch',
+    level: benchCase.level,
+    meta: benchCase.meta,
+    js: jsMetrics,
+    wasm: wasmMetrics,
+    speedup: jsMetrics.meanMs === 0 ? 0 : jsMetrics.meanMs / wasmMetrics.meanMs,
+  };
+}
+
+function assertString(value: unknown, label: string): asserts value is string {
+  if (typeof value !== 'string') {
+    throw new Error(`Expected ${label} to be a string for diff benchmark`);
+  }
+}
+
+function assertJsonValue(value: unknown, label: string): asserts value is string | object {
+  if (typeof value === 'string') return;
+  if (typeof value === 'object' && value !== null) return;
+  throw new Error(`Expected ${label} to be a JSON string or object for diff benchmark`);
 }
 
 function iterationsForCase(base: number, benchCase: BenchCase): number {

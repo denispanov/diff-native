@@ -1,15 +1,42 @@
+import type {
+  BaseOptions,
+  Change,
+  JsonOptions,
+  LinesOptions,
+  PatchOptions,
+  WordsOptions,
+} from 'diff';
+
 export type BenchmarkKind = 'diff' | 'patch';
 export type Granularity = 'char' | 'word' | 'sentence' | 'line' | 'json';
 export type DiffMode = 'mixed' | 'ins' | 'del';
-export type AnyFn = (...args: unknown[]) => unknown;
+
+export type DiffCharsFn = (oldStr: string, newStr: string, options?: BaseOptions) => Change[];
+export type DiffWordsFn = (oldStr: string, newStr: string, options?: WordsOptions) => Change[];
+export type DiffSentencesFn = (oldStr: string, newStr: string, options?: BaseOptions) => Change[];
+export type DiffLinesFn = (oldStr: string, newStr: string, options?: LinesOptions) => Change[];
+export type DiffJsonFn = (
+  oldObj: string | object,
+  newObj: string | object,
+  options?: JsonOptions
+) => Change[];
+export type CreateTwoFilesPatchFn = (
+  oldFileName: string,
+  newFileName: string,
+  oldStr: string,
+  newStr: string,
+  oldHeader?: string,
+  newHeader?: string,
+  options?: PatchOptions
+) => string;
 
 export interface DiffNativeExports {
-  diffChars: AnyFn;
-  diffWords: AnyFn;
-  diffSentences: AnyFn;
-  diffLines: AnyFn;
-  diffJson: AnyFn;
-  createTwoFilesPatch: AnyFn;
+  diffChars: DiffCharsFn;
+  diffWords: DiffWordsFn;
+  diffSentences: DiffSentencesFn;
+  diffLines: DiffLinesFn;
+  diffJson: DiffJsonFn;
+  createTwoFilesPatch: CreateTwoFilesPatchFn;
 }
 
 export interface CaseMeta {

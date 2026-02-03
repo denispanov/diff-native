@@ -1,8 +1,12 @@
 import { performance } from 'node:perf_hooks';
-import type { AnyFn, Metrics } from './types.js';
+import type { Metrics } from './types.js';
 import { mean, p95 } from './utils.js';
 
-export function measure(fn: AnyFn, args: unknown[], runs: number): Metrics {
+export function measure<Args extends readonly unknown[]>(
+  fn: (...args: Args) => unknown,
+  args: Args,
+  runs: number
+): Metrics {
   const times: number[] = [];
   const heap: number[] = [];
   const rss: number[] = [];

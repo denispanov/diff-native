@@ -116,7 +116,7 @@ export function generateExampleJsonObjects(params: JsonParams): JsonTestCase {
         }
         if (Array.isArray(parentNodeForAdd)) {
           parentNodeForAdd.push(randomJsonValue(rng, parentPathForAdd.length));
-        } else if (typeof parentNodeForAdd === 'object' && parentNodeForAdd !== null) {
+        } else if (isJsonObject(parentNodeForAdd)) {
           const addedKeyPart = String(Math.floor(rng() * 1000));
           parentNodeForAdd[`addedKey_${String(opIdx)}_${addedKeyPart}`] = randomJsonValue(
             rng,
@@ -139,8 +139,7 @@ export function generateExampleJsonObjects(params: JsonParams): JsonTestCase {
             if (Array.isArray(parentOfDeletionTarget) && typeof keyOrIndexToDelete === 'number') {
               parentOfDeletionTarget.splice(keyOrIndexToDelete, 1);
             } else if (
-              typeof parentOfDeletionTarget === 'object' &&
-              parentOfDeletionTarget !== null &&
+              isJsonObject(parentOfDeletionTarget) &&
               typeof keyOrIndexToDelete === 'string'
             ) {
               delete parentOfDeletionTarget[keyOrIndexToDelete];
@@ -163,8 +162,7 @@ export function generateExampleJsonObjects(params: JsonParams): JsonTestCase {
             ) {
               parentOfModificationTarget[keyOrIndexToModify] = newValue;
             } else if (
-              typeof parentOfModificationTarget === 'object' &&
-              parentOfModificationTarget !== null &&
+              isJsonObject(parentOfModificationTarget) &&
               typeof keyOrIndexToModify === 'string'
             ) {
               parentOfModificationTarget[keyOrIndexToModify] = newValue;
@@ -232,4 +230,8 @@ function countTotalProperties(obj: unknown): number {
     }
   }
   return count;
+}
+
+function isJsonObject(value: unknown): value is Record<string, JsonValue> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

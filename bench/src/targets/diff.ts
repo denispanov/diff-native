@@ -1,13 +1,30 @@
 import * as jsdiff from 'diff';
-import type { DiffNativeExports } from '../types.js';
+import type {
+  DiffCharsFn,
+  DiffJsonFn,
+  DiffLinesFn,
+  DiffNativeExports,
+  DiffSentencesFn,
+  DiffWordsFn,
+} from '../types.js';
 
 export function createDiffTargets(diffNative: DiffNativeExports) {
+  const jsChar: DiffCharsFn = (oldStr, newStr, options) =>
+    jsdiff.diffChars(oldStr, newStr, options);
+  const jsWord: DiffWordsFn = (oldStr, newStr, options) =>
+    jsdiff.diffWords(oldStr, newStr, options);
+  const jsSentence: DiffSentencesFn = (oldStr, newStr, options) =>
+    jsdiff.diffSentences(oldStr, newStr, options);
+  const jsLine: DiffLinesFn = (oldStr, newStr, options) =>
+    jsdiff.diffLines(oldStr, newStr, options);
+  const jsJson: DiffJsonFn = (oldObj, newObj, options) => jsdiff.diffJson(oldObj, newObj, options);
+
   return {
-    char: { js: jsdiff.diffChars, wasm: diffNative.diffChars },
-    word: { js: jsdiff.diffWords, wasm: diffNative.diffWords },
-    sentence: { js: jsdiff.diffSentences, wasm: diffNative.diffSentences },
-    line: { js: jsdiff.diffLines, wasm: diffNative.diffLines },
-    json: { js: jsdiff.diffJson, wasm: diffNative.diffJson },
+    char: { js: jsChar, wasm: diffNative.diffChars },
+    word: { js: jsWord, wasm: diffNative.diffWords },
+    sentence: { js: jsSentence, wasm: diffNative.diffSentences },
+    line: { js: jsLine, wasm: diffNative.diffLines },
+    json: { js: jsJson, wasm: diffNative.diffJson },
   } as const;
 }
 
