@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Installing system build dependencies"
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  build-essential \
+  ca-certificates \
+  curl \
+  libssl-dev \
+  pkg-config \
+  unzip
+
+mkdir -p "$HOME/.local/bin"
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "==> Installing Bun"
+  curl -fsSL https://bun.sh/install | bash
+fi
+
+if [[ -x "$HOME/.bun/bin/bun" ]]; then
+  ln -sf "$HOME/.bun/bin/bun" "$HOME/.local/bin/bun"
+  ln -sf "$HOME/.bun/bin/bunx" "$HOME/.local/bin/bunx"
+fi
+
+if ! command -v rustup >/dev/null 2>&1; then
+  echo "==> Installing the stable Rust toolchain"
+  curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | \
+    sh -s -- -y --profile minimal --default-toolchain stable
+fi
+
+export PATH="$HOME/.cargo/bin:$HOME/.bun/bin:$HOME/.local/bin:$PATH"
+
+echo "==> Configuring Rust for WebAssembly builds"
+rustup toolchain install stable --profile minimal \
+  --component clippy --component rustfmt \
+  --target wasm32-unknown-unknown
+rustup default stable
+
+echo "==> Installing wasm-pack 0.13.1"
+if ! command -v wasm-pack >/dev/null 2>&1 || \
+  [[ "$(wasm-pack --version)" != "wasm-pack 0.13.1" ]]; then
+  cargo install wasm-pack --version 0.13.1 --locked
+fi
+
+for tool in cargo clippy-driver rustc rustdoc rustfmt rustup wasm-pack; do
+  if [[ -x "$HOME/.cargo/bin/$tool" ]]; then
+    ln -sf "$HOME/.cargo/bin/$tool" "$HOME/.local/bin/$tool"
+  fi
+done
+
+echo "==> Installing JavaScript dependencies"
+bun install --frozen-lockfile
+
+echo "==> Orb setup complete"
