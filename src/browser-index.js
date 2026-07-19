@@ -1,6 +1,11 @@
 import init, * as diffNative from './diff_native.js';
+import { canonicalize, diffJson as runJsonDiff } from './json.js';
 
 await init();
+
+export function diffJson(oldValue, newValue, options) {
+  return runJsonDiff(diffNative.diffJson, oldValue, newValue, options);
+}
 
 export const diffChars = diffNative.diffChars;
 export const diffWordsWithSpace = diffNative.diffWordsWithSpace;
@@ -9,7 +14,6 @@ export const diffLines = diffNative.diffLines;
 export const diffTrimmedLines = diffNative.diffTrimmedLines;
 export const diffSentences = diffNative.diffSentences;
 export const diffCss = diffNative.diffCss;
-export const diffJson = diffNative.diffJson;
 
 export const convertChangesToXML = diffNative.convertChangesToXML;
 
@@ -29,7 +33,7 @@ export const winToUnix = diffNative.winToUnix;
 
 export const wordDiff = diffNative.wordDiff;
 export const sentenceDiff = diffNative.sentenceDiff;
-export const canonicalize = diffNative.canonicalize;
+export { canonicalize };
 
 // Debug utilities (for development only)
 export const debug = {

@@ -16,7 +16,7 @@ pub use patch::types::{Hunk, Patch};
 
 pub use diff::character::diff_chars;
 pub use diff::css::diff_css;
-pub use diff::json::{canonicalize, diff_json};
+pub use diff::json::diff_json;
 pub use diff::line::{diff_lines, diff_trimmed_lines};
 pub use diff::sentences::diff_sentences;
 pub use diff::word::{diff_words, diff_words_with_space};

@@ -1,7 +1,17 @@
-use super::base::{Diff, Options};
+use super::base::{Change, Diff, Options};
 use super::character::CharTokenizer;
 use super::memory_pool::PooledDiff;
 use std::thread;
+
+fn assert_single_token_changes(changes: &[Change], values: &[&str], added: bool, removed: bool) {
+    assert_eq!(changes.len(), values.len());
+    for (change, value) in changes.iter().zip(values) {
+        assert_eq!(change.value, *value);
+        assert_eq!(change.count, 1);
+        assert_eq!(change.added, added);
+        assert_eq!(change.removed, removed);
+    }
+}
 
 #[test]
 fn test_pooled_diff_basic() {
@@ -25,6 +35,21 @@ fn test_pooled_diff_basic() {
         assert_eq!(result.last().unwrap().value, "c");
         assert!(!result.last().unwrap().added && !result.last().unwrap().removed);
     }
+}
+
+#[test]
+fn test_one_change_per_token_with_empty_side() {
+    let options = Options {
+        one_change_per_token: true,
+        ..Options::default()
+    };
+    let original = Diff::new(CharTokenizer, options.clone());
+    let mut pooled = PooledDiff::new(CharTokenizer, options);
+
+    assert_single_token_changes(&original.diff("", "abc"), &["a", "b", "c"], true, false);
+    assert_single_token_changes(&original.diff("abc", ""), &["a", "b", "c"], false, true);
+    assert_single_token_changes(&pooled.diff("", "abc"), &["a", "b", "c"], true, false);
+    assert_single_token_changes(&pooled.diff("abc", ""), &["a", "b", "c"], false, true);
 }
 
 #[test]

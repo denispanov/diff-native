@@ -1,10 +1,10 @@
 use super::base::{Options, Tokeniser};
-use super::json::{canonicalize_value, JsonTokenizer};
+use super::json::JsonTokenizer;
 use super::token::Token;
 
 #[test]
 fn test_empty_string() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let mut arena = Vec::new();
     let tokens = tokenizer.tokenize("", &mut arena);
     assert_eq!(tokens.len(), 0);
@@ -12,7 +12,7 @@ fn test_empty_string() {
 
 #[test]
 fn test_single_line_json() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let mut arena = Vec::new();
     let input = r#"{"key":"value"}"#;
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -24,7 +24,7 @@ fn test_single_line_json() {
 
 #[test]
 fn test_multiline_json() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let mut arena = Vec::new();
     let input = "{\n  \"key\": \"value\"\n}";
     let tokens = tokenizer.tokenize(input, &mut arena);
@@ -38,7 +38,7 @@ fn test_multiline_json() {
 
 #[test]
 fn test_complex_json() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let mut arena = Vec::new();
     let input = "{\n  \"name\": \"John\",\n  \"age\": 30,\n  \"address\": {\n    \"street\": \"123 Main St\",\n    \"city\": \"Anytown\"\n  },\n  \"phones\": [\n    \"123-456-7890\",\n    \"098-765-4321\"\n  ]\n}";
 
@@ -61,7 +61,7 @@ fn test_complex_json() {
 
 #[test]
 fn test_trailing_comma_tolerance() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let options = Options::default();
     let a = Token {
         text: "  \"key\": \"value\"\n",
@@ -82,7 +82,7 @@ fn test_trailing_comma_tolerance() {
 
 #[test]
 fn test_differing_content_not_equal() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let options = Options::default();
     let a = Token {
         text: "  \"key\": \"value1\"\n",
@@ -95,7 +95,7 @@ fn test_differing_content_not_equal() {
 
 #[test]
 fn test_comma_in_middle_not_ignored() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let options = Options::default();
     let a = Token {
         text: "  \"key1\": \"value1\"\n",
@@ -107,66 +107,8 @@ fn test_comma_in_middle_not_ignored() {
 }
 
 #[test]
-fn test_canonicalize_order() {
-    let input = serde_json::json!({
-        "c": 3,
-        "a": 1,
-        "b": 2
-    });
-
-    let expected = serde_json::json!({
-        "a": 1,
-        "b": 2,
-        "c": 3
-    });
-
-    let canonical = canonicalize_value(&input);
-    assert_eq!(canonical, expected);
-    let serialized = serde_json::to_string(&canonical).unwrap();
-    assert!(serialized.contains("\"a\":1"));
-}
-
-#[test]
-fn test_canonicalize_nested() {
-    let input = serde_json::json!({
-        "outer": {
-            "z": 3,
-            "y": 2,
-            "x": 1
-        }
-    });
-
-    let expected = serde_json::json!({
-        "outer": {
-            "x": 1,
-            "y": 2,
-            "z": 3
-        }
-    });
-
-    let canonical = canonicalize_value(&input);
-    assert_eq!(canonical, expected);
-}
-
-#[test]
-fn test_canonicalize_arrays() {
-    let input = serde_json::json!([
-        {"z": 1, "a": 2},
-        {"b": 3, "c": 4}
-    ]);
-
-    let expected = serde_json::json!([
-        {"a": 2, "z": 1},
-        {"b": 3, "c": 4}
-    ]);
-
-    let canonical = canonicalize_value(&input);
-    assert_eq!(canonical, expected);
-}
-
-#[test]
 fn test_join_function() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let tokens = vec![
         Token { text: "{\n" },
         Token {
@@ -182,7 +124,7 @@ fn test_join_function() {
 
 #[test]
 fn test_real_world_example() {
-    let tokenizer = JsonTokenizer;
+    let tokenizer = JsonTokenizer::<false>;
     let mut arena = Vec::new();
 
     let input = "{\n  \"a\": 123,\n  \"b\": 456,\n  \"c\": 789\n}";

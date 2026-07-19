@@ -45,6 +45,37 @@ pub trait Tokeniser<'a> {
 
     fn join(&self, toks: &[Token<'a>]) -> String;
 
+    fn token_len(&self, tok: &Token<'a>, _opts: &Options) -> usize {
+        tok.text.len()
+    }
+
+    fn change_all(
+        &self,
+        toks: &[Token<'a>],
+        added: bool,
+        removed: bool,
+        opts: &Options,
+    ) -> Vec<Change> {
+        let changes = if opts.one_change_per_token {
+            toks.iter()
+                .map(|tok| Change {
+                    value: self.join(core::slice::from_ref(tok)),
+                    count: 1,
+                    added,
+                    removed,
+                })
+                .collect()
+        } else {
+            vec![Change {
+                value: self.join(toks),
+                count: toks.len() as u32,
+                added,
+                removed,
+            }]
+        };
+        self.post_process(changes, opts)
+    }
+
     #[inline(always)]
     fn equals(&self, l: &Token<'a>, r: &Token<'a>, opts: &Options) -> bool {
         if !opts.ignore_case {
@@ -155,26 +186,10 @@ impl<'a, T: Tokeniser<'a>> Diff<'a, T> {
             return Vec::new();
         }
         if a_len == 0 {
-            return self.tokenizer.post_process(
-                vec![Change {
-                    value: new_raw.to_string(),
-                    count: b_len as u32,
-                    added: true,
-                    removed: false,
-                }],
-                &self.opts,
-            );
+            return self.tokenizer.change_all(b, true, false, &self.opts);
         }
         if b_len == 0 {
-            return self.tokenizer.post_process(
-                vec![Change {
-                    value: old_raw.to_string(),
-                    count: a_len as u32,
-                    added: false,
-                    removed: true,
-                }],
-                &self.opts,
-            );
+            return self.tokenizer.change_all(a, false, true, &self.opts);
         }
 
         self.run_myers(a_len, b_len, a, b)
@@ -254,7 +269,9 @@ impl<'a, T: Tokeniser<'a>> Diff<'a, T> {
                     for i in 0..c.count as usize {
                         let new_tok = &new_toks[new_pos + i];
                         let old_tok = &old_toks[old_pos + i];
-                        if old_tok.text.len() > new_tok.text.len() {
+                        if self.tokenizer.token_len(old_tok, &self.opts)
+                            > self.tokenizer.token_len(new_tok, &self.opts)
+                        {
                             chosen.push(*old_tok);
                         } else {
                             chosen.push(*new_tok);
