@@ -1,24 +1,43 @@
 import type {
-  BaseOptions,
   Change,
-  JsonOptions,
-  LinesOptions,
-  PatchOptions,
-  WordsOptions,
+  CreatePatchOptionsNonabortable,
+  DiffCharsOptionsNonabortable,
+  DiffJsonOptionsNonabortable,
+  DiffLinesOptionsNonabortable,
+  DiffSentencesOptionsNonabortable,
+  DiffWordsOptionsNonabortable,
 } from 'diff';
 
 export type BenchmarkKind = 'diff' | 'patch';
 export type Granularity = 'char' | 'word' | 'sentence' | 'line' | 'json';
 export type DiffMode = 'mixed' | 'ins' | 'del';
 
-export type DiffCharsFn = (oldStr: string, newStr: string, options?: BaseOptions) => Change[];
-export type DiffWordsFn = (oldStr: string, newStr: string, options?: WordsOptions) => Change[];
-export type DiffSentencesFn = (oldStr: string, newStr: string, options?: BaseOptions) => Change[];
-export type DiffLinesFn = (oldStr: string, newStr: string, options?: LinesOptions) => Change[];
+type SynchronousOptions<T> = Omit<T, 'callback'>;
+
+export type DiffCharsFn = (
+  oldStr: string,
+  newStr: string,
+  options?: SynchronousOptions<DiffCharsOptionsNonabortable>
+) => Change[];
+export type DiffWordsFn = (
+  oldStr: string,
+  newStr: string,
+  options?: SynchronousOptions<DiffWordsOptionsNonabortable>
+) => Change[];
+export type DiffSentencesFn = (
+  oldStr: string,
+  newStr: string,
+  options?: SynchronousOptions<DiffSentencesOptionsNonabortable>
+) => Change[];
+export type DiffLinesFn = (
+  oldStr: string,
+  newStr: string,
+  options?: SynchronousOptions<DiffLinesOptionsNonabortable>
+) => Change[];
 export type DiffJsonFn = (
   oldObj: string | object,
   newObj: string | object,
-  options?: JsonOptions
+  options?: SynchronousOptions<DiffJsonOptionsNonabortable>
 ) => Change[];
 export type CreateTwoFilesPatchFn = (
   oldFileName: string,
@@ -27,7 +46,7 @@ export type CreateTwoFilesPatchFn = (
   newStr: string,
   oldHeader?: string,
   newHeader?: string,
-  options?: PatchOptions
+  options?: SynchronousOptions<CreatePatchOptionsNonabortable>
 ) => string;
 
 export interface DiffNativeExports {
