@@ -56,6 +56,12 @@ bun test
 bun run test:rust
 ```
 
+## Testing approach
+
+- `<module>.test.ts` contains hand-written examples and permanent minimized regressions.
+- `<module>.differential.test.ts` contains deterministic generated comparisons against exact `diff@9.0.0`, using fixed checked-in seeds and case counts. These files run with normal `bun test` and in CI.
+- Run the line differential suite with `bun test tests/diff/line.differential.test.ts`, or all differential suites with `bun run test:differential`.
+
 ## Change requirements
 
 - For behavior-affecting fixes or compatibility work, add a focused regression test and differential coverage where practical.
