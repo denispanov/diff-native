@@ -52,4 +52,7 @@ done
 echo "==> Installing JavaScript dependencies"
 bun install --frozen-lockfile
 
+echo "==> Installing Playwright Chromium"
+bun run playwright install --with-deps chromium
+
 echo "==> Orb setup complete"

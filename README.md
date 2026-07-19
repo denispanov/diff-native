@@ -143,12 +143,13 @@ Performance benefits are most noticeable when processing larger documents or wor
 
 ## Browser Compatibility
 
-diff-native works in all modern browsers that support WebAssembly:
+The browser and ESM builds use native ES modules with top-level `await` to initialize WebAssembly
+before exports become callable. They require:
 
-- Chrome 57+
-- Firefox 53+
-- Safari 11+
-- Edge 16+
+- Chrome 89+
+- Firefox 89+
+- Safari 15+
+- Edge 89+
 
 ## Runtime Support
 

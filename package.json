@@ -23,11 +23,11 @@
   "types": "types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
+      "browser": "./dist/browser/index.js",
       "node": "./dist/node/index.js",
       "import": "./dist/esm/index.js",
       "require": "./dist/node/index.js",
-      "types": "./types/index.d.ts",
-      "browser": "./dist/browser/index.js",
       "default": "./dist/browser/index.js"
     }
   },
@@ -55,6 +55,7 @@
     "test": "bun test",
     "test:conformance": "bun test tests/conformance.test.ts",
     "test:package": "node scripts/package-entry-verification.mjs",
+    "test:browser": "playwright test tests/browser-entry.playwright.ts",
     "test:rust": "cargo test --lib",
     "test:coverage": "cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out html",
     "lint": "biome lint .",
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "1.61.1",
     "@types/node": "^22.13.4",
     "bun-types": "latest",
     "diff": "9.0.0",
@@ -88,10 +90,6 @@
     "url": "https://github.com/denispanov/diff-native/issues"
   },
   "homepage": "https://github.com/denispanov/diff-native#readme",
-  "trustedDependencies": ["wasm-pack"],
-  "dependencies": {
-    "wasm-pack": "^0.13.1"
-  },
   "lint-staged": {
     "*.{js,ts,json}": ["biome check --write --no-errors-on-unmatched"],
     "*.rs": ["cargo fmt --"]

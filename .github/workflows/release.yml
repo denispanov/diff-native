@@ -20,7 +20,7 @@ jobs:
           targets: wasm32-unknown-unknown
       
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
       
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
