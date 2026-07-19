@@ -54,6 +54,7 @@
     "bench:compare:node": "bun run bench:build && bun run bench:node -- --compare-only",
     "test": "bun test",
     "test:conformance": "bun test tests/conformance.test.ts",
+    "test:differential": "bun test differential.test.ts",
     "test:package": "node scripts/package-entry-verification.mjs",
     "test:browser": "playwright test tests/browser-entry.playwright.ts",
     "test:rust": "cargo test --lib",
@@ -74,6 +75,7 @@
     "@types/node": "22.14.1",
     "bun-types": "1.3.14",
     "diff": "9.0.0",
+    "fast-check": "4.9.0",
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
     "typescript": "5.8.3"
