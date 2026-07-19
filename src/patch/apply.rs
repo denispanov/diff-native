@@ -8,13 +8,25 @@ use crate::{
             is_unix_internal, is_win_internal, unix_to_win_internal, win_to_unix_internal,
         },
         parse::parse_patch_internal,
-        types::{Hunk, Patch},
+        types::{patch_from_value, Hunk, Patch},
     },
     util::{
         distance_iterator::DistanceIterator,
         string::{has_only_unix_line_endings, has_only_win_line_endings},
     },
 };
+
+#[wasm_bindgen(module = "/src/patch-boundary.js")]
+extern "C" {
+    #[wasm_bindgen(js_name = preparePatchBoundary, catch)]
+    fn prepare_patch_boundary(
+        source: &str,
+        patch: &JsValue,
+        options: &JsValue,
+    ) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(js_name = fuzzFactorBoundary, catch)]
+    fn fuzz_factor_boundary(options: &JsValue) -> Result<JsValue, JsValue>;
+}
 
 #[derive(Default, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -93,11 +105,23 @@ pub(crate) fn apply_patch_internal(
     let mut min_line: isize = 0;
 
     for h in &patch.hunks {
-        let max_line = lines.len() as isize - h.old_lines as isize + fuzz as isize;
+        let old_start =
+            patch_isize(h.old_start.0).ok_or_else(|| "invalid hunk range".to_string())?;
+        let max_line_value = lines.len() as f64 - h.old_lines.0 + fuzz as f64;
+        let max_line = if max_line_value.is_nan() || max_line_value <= isize::MIN as f64 {
+            isize::MIN
+        } else if max_line_value >= isize::MAX as f64 {
+            isize::MAX
+        } else {
+            max_line_value.floor() as isize
+        };
         let mut applied: Option<(isize, Vec<String>, isize)> = None;
 
         for max_err in 0..=fuzz {
-            let start_pos = h.old_start as isize + prev_hunk_offset - 1;
+            let start_pos = old_start
+                .checked_add(prev_hunk_offset)
+                .and_then(|value| value.checked_sub(1))
+                .ok_or_else(|| "invalid hunk range".to_string())?;
 
             if let Some(r) = try_apply_hunk_with_options(h, &lines, start_pos, max_err, options) {
                 applied = Some((start_pos, r.patched_lines, r.old_line_last_i));
@@ -120,24 +144,55 @@ pub(crate) fn apply_patch_internal(
 
         let (pos, patched, old_last) = applied.ok_or_else(|| "hunk apply failed".to_string())?;
 
+        let copy_start = min_line.max(0);
+        let copy_end = pos.max(0);
+        let additional_lines = usize::try_from(copy_end.saturating_sub(copy_start))
+            .ok()
+            .and_then(|count| count.checked_add(patched.len()))
+            .ok_or_else(|| "invalid hunk range".to_string())?;
+        result
+            .try_reserve_exact(additional_lines)
+            .map_err(|_| "invalid hunk range".to_string())?;
         for l in min_line.max(0)..pos.max(0) {
             if (l as usize) < lines.len() {
                 result.push(lines[l as usize].clone());
+            } else {
+                result.push(String::new());
             }
         }
         result.extend(patched);
 
-        min_line = old_last + 1;
-        prev_hunk_offset = pos + 1 - h.old_start as isize;
+        min_line = old_last
+            .checked_add(1)
+            .ok_or_else(|| "invalid hunk range".to_string())?;
+        prev_hunk_offset = pos
+            .checked_add(1)
+            .and_then(|value| value.checked_sub(old_start))
+            .ok_or_else(|| "invalid hunk range".to_string())?;
     }
 
-    for l in min_line.max(0)..lines.len() as isize {
-        if (l as usize) < lines.len() {
-            result.push(lines[l as usize].clone());
+    let tail_start = min_line.max(0).min(lines.len() as isize) as usize;
+    let tail_lines = lines.len() - tail_start;
+    result
+        .try_reserve_exact(tail_lines)
+        .map_err(|_| "invalid hunk range".to_string())?;
+    result.extend_from_slice(&lines[tail_start..]);
+
+    let output_bytes = result
+        .iter()
+        .try_fold(0usize, |total, line| total.checked_add(line.len()))
+        .and_then(|total| total.checked_add(result.len().saturating_sub(1)))
+        .ok_or_else(|| "invalid hunk range".to_string())?;
+    let mut output = String::new();
+    output
+        .try_reserve_exact(output_bytes)
+        .map_err(|_| "invalid hunk range".to_string())?;
+    for (index, line) in result.iter().enumerate() {
+        if index > 0 {
+            output.push('\n');
         }
+        output.push_str(line);
     }
-
-    let mut output = result.join("\n");
 
     // Special case: when source was empty and we added content, ensure trailing newline
     if source.is_empty() && !output.is_empty() && !output.ends_with('\n') {
@@ -156,53 +211,66 @@ pub(crate) fn apply_patch_internal(
     Ok(output)
 }
 
+fn patch_isize(value: f64) -> Option<isize> {
+    if value.is_finite() && value >= 0.0 && value <= isize::MAX as f64 && value.fract() == 0.0 {
+        Some(value as isize)
+    } else {
+        None
+    }
+}
+
 #[wasm_bindgen(js_name = applyPatch)]
 pub fn apply_patch(source: &str, uni_diff: JsValue, opts: JsValue) -> Result<JsValue, JsValue> {
     let mut patch_val = uni_diff.clone();
 
     if Array::is_array(&uni_diff) {
         let arr = Array::from(&uni_diff);
-        if arr.length() != 1 {
-            return Err(JsValue::from_str(
-                "applyPatch only works with a single input.",
-            ));
+        if arr.length() > 1 {
+            return Err(js_sys::Error::new("applyPatch only works with a single input.").into());
         }
         patch_val = arr.get(0);
     }
 
-    let patch: Patch = if patch_val.is_string() {
+    let patch_val = if patch_val.is_string() {
         let s = patch_val.as_string().unwrap();
-        parse_patch_internal(&s)
-            .map_err(|e| JsValue::from_str(&e))?
+        let patch = parse_patch_internal(&s)
+            .map_err(|error| js_sys::Error::new(&error))?
             .into_iter()
             .next()
-            .ok_or_else(|| JsValue::from_str("empty patch"))?
+            .ok_or_else(|| JsValue::from_str("empty patch"))?;
+        serde_wasm_bindgen::to_value(&patch)
+            .map_err(|error| js_sys::Error::new(&error.to_string()))?
     } else {
-        serde_wasm_bindgen::from_value(patch_val)?
+        patch_val
     };
+    let patch_val = prepare_patch_boundary(source, &patch_val, &opts)?;
+    let patch = patch_from_value(patch_val)?;
 
+    let mut options = ApplyOptions {
+        auto_convert_line_endings: Some(false),
+        ..ApplyOptions::default()
+    };
     if !opts.is_undefined() && !opts.is_null() {
-        let ff =
-            Reflect::get(&opts, &JsValue::from_str("fuzzFactor")).unwrap_or(JsValue::UNDEFINED);
-        if !ff.is_undefined() && !ff.is_null() {
+        let ff = fuzz_factor_boundary(&opts)?;
+        #[allow(deprecated)]
+        let fuzz_is_truthy = js_sys::Boolean::new(&ff).value_of();
+        if fuzz_is_truthy {
             if let Some(n) = ff.as_f64() {
-                if n < 0.0 || n.fract() != 0.0 {
-                    return Err(JsValue::from_str(
-                        "fuzzFactor must be a non-negative integer",
-                    ));
+                if !n.is_finite() || n < 0.0 || n.fract() != 0.0 {
+                    return Err(
+                        js_sys::Error::new("fuzzFactor must be a non-negative integer").into(),
+                    );
                 }
+                options.fuzz_factor = Some(n as usize);
             } else {
-                return Err(JsValue::from_str(
-                    "fuzzFactor must be a non-negative integer",
-                ));
+                return Err(js_sys::Error::new("fuzzFactor must be a non-negative integer").into());
             }
+        } else {
+            options.fuzz_factor = Some(0);
         }
     }
 
-    let mut options: ApplyOptions =
-        serde_wasm_bindgen::from_value(opts.clone()).unwrap_or_default();
-
-    if !opts.is_undefined() && !opts.is_null() {
+    if opts.is_object() || opts.is_function() {
         let compare_line =
             Reflect::get(&opts, &JsValue::from_str("compareLine")).unwrap_or(JsValue::UNDEFINED);
         if !compare_line.is_undefined() && !compare_line.is_null() && compare_line.is_function() {
@@ -265,8 +333,17 @@ fn apply_hunk_rec(
             continue;
         }
 
-        let op = hl.chars().next().unwrap_or(' ');
-        let content = if hl.is_empty() { "" } else { &hl[1..] };
+        let (op, content) = if hl.is_empty() {
+            (' ', "")
+        } else {
+            match hl.as_bytes()[0] {
+                b'+' | b'-' | b' ' => (hl.as_bytes()[0] as char, &hl[1..]),
+                _ => {
+                    hunk_i += 1;
+                    continue;
+                }
+            }
+        };
 
         match op {
             '-' => {

@@ -2,6 +2,18 @@ use wasm_bindgen::prelude::*;
 
 use crate::patch::types::Patch;
 
+#[wasm_bindgen(module = "/src/patch-boundary.js")]
+extern "C" {
+    #[wasm_bindgen(js_name = isUnixBoundary, catch)]
+    fn is_unix_boundary(patch: &JsValue) -> Result<bool, JsValue>;
+    #[wasm_bindgen(js_name = isWinBoundary, catch)]
+    fn is_win_boundary(patch: &JsValue) -> Result<bool, JsValue>;
+    #[wasm_bindgen(js_name = unixToWinBoundary, catch)]
+    fn unix_to_win_boundary(patch: &JsValue) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(js_name = winToUnixBoundary, catch)]
+    fn win_to_unix_boundary(patch: &JsValue) -> Result<JsValue, JsValue>;
+}
+
 pub(crate) fn is_unix_internal(patch: &Patch) -> bool {
     patch.hunks.iter().all(|h| {
         h.lines
@@ -57,46 +69,30 @@ pub(crate) fn unix_to_win_internal(p: &Patch) -> Patch {
     out
 }
 
+fn converted_value(value: JsValue, to_windows: bool) -> Result<JsValue, JsValue> {
+    if to_windows {
+        unix_to_win_boundary(&value)
+    } else {
+        win_to_unix_boundary(&value)
+    }
+}
+
 #[wasm_bindgen(js_name = isUnix)]
 pub fn is_unix(v: JsValue) -> Result<bool, JsValue> {
-    if let Ok(vec) = serde_wasm_bindgen::from_value::<Vec<Patch>>(v.clone()) {
-        return Ok(vec.iter().all(is_unix_internal));
-    }
-    let p: Patch = serde_wasm_bindgen::from_value(v)?;
-    Ok(is_unix_internal(&p))
+    is_unix_boundary(&v)
 }
 
 #[wasm_bindgen(js_name = isWin)]
 pub fn is_win(v: JsValue) -> Result<bool, JsValue> {
-    if let Ok(vec) = serde_wasm_bindgen::from_value::<Vec<Patch>>(v.clone()) {
-        let some = vec.iter().any(|p| {
-            p.hunks
-                .iter()
-                .any(|h| h.lines.iter().any(|l| l.ends_with('\r')))
-        });
-        let all = vec.iter().all(is_win_internal);
-        return Ok(some && all);
-    }
-    let p: Patch = serde_wasm_bindgen::from_value(v)?;
-    Ok(is_win_internal(&p))
+    is_win_boundary(&v)
 }
 
 #[wasm_bindgen(js_name = winToUnix)]
 pub fn win_to_unix(v: JsValue) -> Result<JsValue, JsValue> {
-    if let Ok(vec) = serde_wasm_bindgen::from_value::<Vec<Patch>>(v.clone()) {
-        let conv: Vec<Patch> = vec.iter().map(win_to_unix_internal).collect();
-        return serde_wasm_bindgen::to_value(&conv).map_err(Into::into);
-    }
-    let p: Patch = serde_wasm_bindgen::from_value(v)?;
-    serde_wasm_bindgen::to_value(&win_to_unix_internal(&p)).map_err(Into::into)
+    converted_value(v, false)
 }
 
 #[wasm_bindgen(js_name = unixToWin)]
 pub fn unix_to_win(v: JsValue) -> Result<JsValue, JsValue> {
-    if let Ok(vec) = serde_wasm_bindgen::from_value::<Vec<Patch>>(v.clone()) {
-        let conv: Vec<Patch> = vec.iter().map(unix_to_win_internal).collect();
-        return serde_wasm_bindgen::to_value(&conv).map_err(Into::into);
-    }
-    let p: Patch = serde_wasm_bindgen::from_value(v)?;
-    serde_wasm_bindgen::to_value(&unix_to_win_internal(&p)).map_err(Into::into)
+    converted_value(v, true)
 }

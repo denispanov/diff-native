@@ -55,18 +55,18 @@ fn test_prefix_space_function() {
 #[test]
 fn test_format_single_header_tabs() {
     let patch = Patch {
-        old_file_name: "test".to_string(),
-        new_file_name: "test".to_string(),
-        old_header: "".to_string(),
-        new_header: "".to_string(),
+        old_file_name: Some("test".to_string()),
+        new_file_name: Some("test".to_string()),
+        old_header: Some("".to_string()),
+        new_header: Some("".to_string()),
         hunks: vec![],
         ..Default::default()
     };
 
     let formatted = format_single(&patch);
     let lines: Vec<&str> = formatted.lines().collect();
-    assert!(lines[2].starts_with("--- test\t"));
-    assert!(lines[3].starts_with("+++ test\t"));
+    assert_eq!(lines[2], "--- test");
+    assert_eq!(lines[3], "+++ test");
 }
 
 #[test]

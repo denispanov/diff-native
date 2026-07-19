@@ -14,10 +14,39 @@ export const diffJson = diffNative.diffJson;
 export const convertChangesToXML = diffNative.convertChangesToXML;
 
 export const parsePatch = diffNative.parsePatch;
-export const createPatch = diffNative.createPatch;
-export const createTwoFilesPatch = diffNative.createTwoFilesPatch;
 export const structuredPatch = diffNative.structuredPatch;
-export const formatPatch = diffNative.formatPatch;
+export const INCLUDE_HEADERS = {
+  includeIndex: true,
+  includeUnderline: true,
+  includeFileHeaders: true,
+};
+export const FILE_HEADERS_ONLY = {
+  includeIndex: false,
+  includeUnderline: false,
+  includeFileHeaders: true,
+};
+export const OMIT_HEADERS = {
+  includeIndex: false,
+  includeUnderline: false,
+  includeFileHeaders: false,
+};
+export const formatPatch = (patch, headerOptions) =>
+  diffNative.formatPatch(patch, headerOptions || INCLUDE_HEADERS);
+export const createTwoFilesPatch = (
+  oldFileName,
+  newFileName,
+  oldStr,
+  newStr,
+  oldHeader,
+  newHeader,
+  options
+) =>
+  formatPatch(
+    structuredPatch(oldFileName, newFileName, oldStr, newStr, oldHeader, newHeader, options),
+    options?.headerOptions
+  );
+export const createPatch = (fileName, oldStr, newStr, oldHeader, newHeader, options) =>
+  createTwoFilesPatch(fileName, fileName, oldStr, newStr, oldHeader, newHeader, options);
 export const applyPatch = diffNative.applyPatch;
 export const applyPatches = diffNative.applyPatches;
 export const reversePatch = diffNative.reversePatch;

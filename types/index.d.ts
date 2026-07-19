@@ -138,13 +138,13 @@ declare module 'diff-native' {
     /** Optional 'Index: filename' line from the patch header */
     index?: string;
     /** Original file name */
-    oldFileName: string;
+    oldFileName: string | undefined;
     /** New file name */
-    newFileName: string;
+    newFileName: string | undefined;
     /** Optional header information for the old file */
-    oldHeader: string;
+    oldHeader: string | undefined;
     /** Optional header information for the new file */
-    newHeader: string;
+    newHeader: string | undefined;
     /** Array of hunks containing the actual changes */
     hunks: Hunk[];
   }
@@ -287,13 +287,18 @@ declare module 'diff-native' {
    * @param options.context Number of context lines to include (default: 4).
    * @returns A unified diff patch string.
    */
+  export interface PatchOptions {
+    context?: number;
+    headerOptions?: HeaderOptions;
+  }
+
   export function createPatch(
     fileName: string,
     oldStr: string,
     newStr: string,
     oldHeader?: string,
     newHeader?: string,
-    options?: { context?: number }
+    options?: PatchOptions
   ): string;
 
   /**
@@ -316,7 +321,7 @@ declare module 'diff-native' {
     newStr: string,
     oldHeader?: string,
     newHeader?: string,
-    options?: { context?: number }
+    options?: PatchOptions
   ): string;
 
   /**
@@ -347,12 +352,22 @@ declare module 'diff-native' {
 
   /**
    * Formats a structured patch or array of patches into a unified diff string.
-   * If given a string, returns it unchanged (useful for pipelines).
    *
-   * @param patch A string, a single structured patch object, or an array of patches.
+   * @param patch A single structured patch object or an array of patches.
    * @returns A formatted unified diff string.
    */
-  export function formatPatch(patch: string | StructuredPatch | StructuredPatch[]): string;
+  export interface HeaderOptions {
+    includeIndex: boolean;
+    includeUnderline: boolean;
+    includeFileHeaders: boolean;
+  }
+  export const INCLUDE_HEADERS: HeaderOptions;
+  export const FILE_HEADERS_ONLY: HeaderOptions;
+  export const OMIT_HEADERS: HeaderOptions;
+  export function formatPatch(
+    patch: StructuredPatch | StructuredPatch[],
+    headerOptions?: HeaderOptions
+  ): string;
 
   /**
    * Applies a unified diff patch to a string.
@@ -404,38 +419,38 @@ declare module 'diff-native' {
   /**
    * Checks if a patch uses Unix-style line endings (LF).
    *
-   * @param patch Patch to check - can be a string, a structured patch object, or an array of patch objects.
+   * @param patch Structured patch object or array of patch objects.
    * @returns True if the patch uses Unix-style line endings.
    */
-  export function isUnix(patch: string | StructuredPatch | StructuredPatch[]): boolean;
+  export function isUnix(patch: StructuredPatch | StructuredPatch[]): boolean;
 
   /**
    * Checks if a patch uses Windows-style line endings (CRLF).
    *
-   * @param patch Patch to check - can be a string, a structured patch object, or an array of patch objects.
+   * @param patch Structured patch object or array of patch objects.
    * @returns True if the patch uses Windows-style line endings.
    */
-  export function isWin(patch: string | StructuredPatch | StructuredPatch[]): boolean;
+  export function isWin(patch: StructuredPatch | StructuredPatch[]): boolean;
 
   /**
    * Converts a patch from Unix-style line endings (LF) to Windows-style (CRLF).
    *
-   * @param patch Patch to convert - can be a string, a structured patch object, or an array of patch objects.
+   * @param patch Structured patch object or array of patch objects.
    * @returns The converted patch in the same format as the input.
    */
   export function unixToWin(
-    patch: string | StructuredPatch | StructuredPatch[]
-  ): string | StructuredPatch | StructuredPatch[];
+    patch: StructuredPatch | StructuredPatch[]
+  ): StructuredPatch | StructuredPatch[];
 
   /**
    * Converts a patch from Windows-style line endings (CRLF) to Unix-style (LF).
    *
-   * @param patch Patch to convert - can be a string, a structured patch object, or an array of patch objects.
+   * @param patch Structured patch object or array of patch objects.
    * @returns The converted patch in the same format as the input.
    */
   export function winToUnix(
-    patch: string | StructuredPatch | StructuredPatch[]
-  ): string | StructuredPatch | StructuredPatch[];
+    patch: StructuredPatch | StructuredPatch[]
+  ): StructuredPatch | StructuredPatch[];
 
   /**
    * Utility object for working with line-level diffs.

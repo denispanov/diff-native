@@ -4,10 +4,10 @@ use pretty_assertions::assert_eq;
 fn create_patch(old_file_name: &str, new_file_name: &str, hunks: Vec<Hunk>) -> Patch {
     Patch {
         index: None,
-        old_file_name: old_file_name.to_string(),
-        new_file_name: new_file_name.to_string(),
-        old_header: String::new(),
-        new_header: String::new(),
+        old_file_name: Some(old_file_name.to_string()),
+        new_file_name: Some(new_file_name.to_string()),
+        old_header: Some(String::new()),
+        new_header: Some(String::new()),
         hunks,
     }
 }
@@ -20,10 +20,10 @@ fn create_hunk(
     lines: Vec<&str>,
 ) -> Hunk {
     Hunk {
-        old_start,
-        old_lines,
-        new_start,
-        new_lines,
+        old_start: old_start.into(),
+        old_lines: old_lines.into(),
+        new_start: new_start.into(),
+        new_lines: new_lines.into(),
         lines: lines.iter().map(|s| s.to_string()).collect(),
     }
 }

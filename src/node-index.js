@@ -1,5 +1,38 @@
 const diffNative = require('./diff_native');
 
+const INCLUDE_HEADERS = { includeIndex: true, includeUnderline: true, includeFileHeaders: true };
+const FILE_HEADERS_ONLY = {
+  includeIndex: false,
+  includeUnderline: false,
+  includeFileHeaders: true,
+};
+const OMIT_HEADERS = { includeIndex: false, includeUnderline: false, includeFileHeaders: false };
+const formatPatch = (patch, headerOptions) =>
+  diffNative.formatPatch(patch, headerOptions || INCLUDE_HEADERS);
+const createTwoFilesPatch = (
+  oldFileName,
+  newFileName,
+  oldStr,
+  newStr,
+  oldHeader,
+  newHeader,
+  options
+) =>
+  formatPatch(
+    diffNative.structuredPatch(
+      oldFileName,
+      newFileName,
+      oldStr,
+      newStr,
+      oldHeader,
+      newHeader,
+      options
+    ),
+    options?.headerOptions
+  );
+const createPatch = (fileName, oldStr, newStr, oldHeader, newHeader, options) =>
+  createTwoFilesPatch(fileName, fileName, oldStr, newStr, oldHeader, newHeader, options);
+
 module.exports = {
   diffChars: diffNative.diffChars,
   diffWordsWithSpace: diffNative.diffWordsWithSpace,
@@ -13,10 +46,13 @@ module.exports = {
   convertChangesToXML: diffNative.convertChangesToXML,
 
   parsePatch: diffNative.parsePatch,
-  createPatch: diffNative.createPatch,
-  createTwoFilesPatch: diffNative.createTwoFilesPatch,
+  createPatch,
+  createTwoFilesPatch,
   structuredPatch: diffNative.structuredPatch,
-  formatPatch: diffNative.formatPatch,
+  formatPatch,
+  INCLUDE_HEADERS,
+  FILE_HEADERS_ONLY,
+  OMIT_HEADERS,
   applyPatch: diffNative.applyPatch,
   applyPatches: diffNative.applyPatches,
   reversePatch: diffNative.reversePatch,

@@ -6,7 +6,13 @@ function captureOutcome(operation: () => unknown): ObservableOutcome {
   try {
     return { kind: 'returned', value: operation() };
   } catch (error) {
-    return { kind: 'threw', error };
+    return {
+      kind: 'threw',
+      error:
+        error instanceof Error
+          ? { kind: 'error', name: error.name, message: error.message }
+          : { kind: 'value', value: error },
+    };
   }
 }
 
