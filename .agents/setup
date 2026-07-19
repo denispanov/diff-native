@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BUN_VERSION="1.3.14"
+RUST_VERSION="1.97.1"
+WASM_PACK_VERSION="0.15.0"
+
 echo "==> Installing system build dependencies"
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -13,9 +17,10 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 mkdir -p "$HOME/.local/bin"
 
-if ! command -v bun >/dev/null 2>&1; then
-  echo "==> Installing Bun"
-  curl -fsSL https://bun.sh/install | bash
+if [[ ! -x "$HOME/.bun/bin/bun" ]] || \
+  [[ "$("$HOME/.bun/bin/bun" --version)" != "$BUN_VERSION" ]]; then
+  echo "==> Installing Bun $BUN_VERSION"
+  curl -fsSL https://bun.sh/install | bash -s -- "bun-v$BUN_VERSION"
 fi
 
 if [[ -x "$HOME/.bun/bin/bun" ]]; then
@@ -24,23 +29,23 @@ if [[ -x "$HOME/.bun/bin/bun" ]]; then
 fi
 
 if ! command -v rustup >/dev/null 2>&1; then
-  echo "==> Installing the stable Rust toolchain"
+  echo "==> Installing Rust $RUST_VERSION"
   curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | \
-    sh -s -- -y --profile minimal --default-toolchain stable
+    sh -s -- -y --profile minimal --default-toolchain "$RUST_VERSION"
 fi
 
 export PATH="$HOME/.cargo/bin:$HOME/.bun/bin:$HOME/.local/bin:$PATH"
 
 echo "==> Configuring Rust for WebAssembly builds"
-rustup toolchain install stable --profile minimal \
+rustup toolchain install "$RUST_VERSION" --profile minimal \
   --component clippy --component rustfmt \
   --target wasm32-unknown-unknown
-rustup default stable
+rustup default "$RUST_VERSION"
 
-echo "==> Installing wasm-pack 0.13.1"
+echo "==> Installing wasm-pack $WASM_PACK_VERSION"
 if ! command -v wasm-pack >/dev/null 2>&1 || \
-  [[ "$(wasm-pack --version)" != "wasm-pack 0.13.1" ]]; then
-  cargo install wasm-pack --version 0.13.1 --locked
+  [[ "$(wasm-pack --version)" != "wasm-pack $WASM_PACK_VERSION" ]]; then
+  cargo install wasm-pack --version "$WASM_PACK_VERSION" --locked
 fi
 
 for tool in cargo clippy-driver rustc rustdoc rustfmt rustup wasm-pack; do
@@ -48,6 +53,10 @@ for tool in cargo clippy-driver rustc rustdoc rustfmt rustup wasm-pack; do
     ln -sf "$HOME/.cargo/bin/$tool" "$HOME/.local/bin/$tool"
   fi
 done
+
+[[ "$(bun --version)" == "$BUN_VERSION" ]]
+[[ "$(rustc --version)" == "rustc $RUST_VERSION "* ]]
+[[ "$(wasm-pack --version)" == "wasm-pack $WASM_PACK_VERSION" ]]
 
 echo "==> Installing JavaScript dependencies"
 bun install --frozen-lockfile
