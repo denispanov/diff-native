@@ -22,7 +22,7 @@ jobs:
         with:
           toolchain: 1.97.1
           targets: wasm32-unknown-unknown
-          components: clippy
+          components: clippy, rustfmt
       
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.15.0 --locked
