@@ -76,6 +76,11 @@ declare module 'diff-native' {
    */
   export interface JsonOptions {
     /**
+     * When true, returns a separate change object for each line token.
+     * @default false
+     */
+    oneChangePerToken?: boolean;
+    /**
      * Value to use when serializing `undefined` values in JSON objects.
      *
      * By default, properties with `undefined` values are omitted from the JSON output
@@ -89,7 +94,11 @@ declare module 'diff-native' {
      * // With undefinedReplacement: null:
      * // { a: 1, b: undefined } becomes { a: 1, b: null }
      */
-    undefinedReplacement?: any | null;
+    undefinedReplacement?: any;
+    /**
+     * Function applied to each value before canonicalization and JSON serialization.
+     */
+    stringifyReplacer?: (key: string, value: any) => any;
   }
 
   /**
@@ -252,7 +261,7 @@ declare module 'diff-native' {
    * @param options Optional configuration options for JSON diffing.
    * @returns An array of change objects representing the differences between the JSON representations.
    */
-  export function diffJson(oldVal: any, newVal: any, options?: JsonOptions | null): Change[];
+  export function diffJson(oldVal: any, newVal: any, options?: JsonOptions): Change[];
 
   /**
    * Converts an array of change objects to an XML string.
@@ -489,17 +498,27 @@ declare module 'diff-native' {
    *
    * This function handles:
    * - Sorting object keys alphabetically for deterministic output
-   * - Handling circular references by replacing them with "[Circular]"
+   * - Reconstructing ancestor cycles in the canonicalized result
    * - Converting objects with toJSON methods properly
    * - Preserving arrays and primitive values
    *
    * This is used internally by `diffJson` but can also be used standalone
    * for preprocessing objects before comparison.
    *
-   * @param val The value to canonicalize.
+   * @param obj The value to canonicalize.
+   * @param stack Ancestor values currently being canonicalized.
+   * @param replacementStack Canonical values corresponding to `stack`.
+   * @param replacer Function applied before canonicalizing each value.
+   * @param key Property key supplied to `replacer`.
    * @returns A canonicalized version of the input value suitable for JSON serialization.
    */
-  export function canonicalize(val: any): any;
+  export function canonicalize(
+    obj: any,
+    stack: Array<any> | null,
+    replacementStack: Array<any> | null,
+    replacer: (key: string, value: any) => any,
+    key?: string
+  ): any;
 
   /**
    * Debug utilities for development environments.

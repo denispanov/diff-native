@@ -1,4 +1,9 @@
 const diffNative = require('./diff_native');
+const json = require('./json.cjs');
+
+function diffJson(oldValue, newValue, options) {
+  return json.diffJson(diffNative.diffJson, oldValue, newValue, options);
+}
 
 module.exports = {
   diffChars: diffNative.diffChars,
@@ -8,7 +13,7 @@ module.exports = {
   diffTrimmedLines: diffNative.diffTrimmedLines,
   diffSentences: diffNative.diffSentences,
   diffCss: diffNative.diffCss,
-  diffJson: diffNative.diffJson,
+  diffJson,
 
   convertChangesToXML: diffNative.convertChangesToXML,
 
@@ -28,7 +33,7 @@ module.exports = {
 
   wordDiff: diffNative.wordDiff,
   sentenceDiff: diffNative.sentenceDiff,
-  canonicalize: diffNative.canonicalize,
+  canonicalize: json.canonicalize,
 
   // Debug utilities (for development only)
   debug: {

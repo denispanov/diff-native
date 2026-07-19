@@ -1,4 +1,3 @@
-use js_sys::JSON;
 use serde::Deserialize;
 use serde_wasm_bindgen as swb;
 use wasm_bindgen::prelude::*;
@@ -8,16 +7,21 @@ use super::{
     token::Token,
 };
 
-#[derive(Deserialize, Default)]
+#[derive(Default, Clone)]
+pub struct JsonTokenizer<const ENCODED_UTF16: bool = false>;
+
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct JsonOptions {
-    undefined_replacement: Option<serde_json::Value>,
+    #[serde(default)]
+    ignore_case: bool,
+    #[serde(default)]
+    one_change_per_token: bool,
+    #[serde(default)]
+    encoded_utf16: bool,
 }
 
-#[derive(Default, Clone)]
-pub struct JsonTokenizer;
-
-impl<'a> Tokeniser<'a> for JsonTokenizer {
+impl<'a, const ENCODED_UTF16: bool> Tokeniser<'a> for JsonTokenizer<ENCODED_UTF16> {
     fn tokenize<'b>(&self, input: &'a str, arena: &'b mut Vec<Token<'a>>) -> &'b [Token<'a>] {
         arena.clear();
 
@@ -46,83 +50,88 @@ impl<'a> Tokeniser<'a> for JsonTokenizer {
         toks.iter().map(|t| t.text).collect()
     }
 
-    fn equals(&self, l: &Token<'a>, r: &Token<'a>, _o: &Options) -> bool {
+    fn token_len(&self, tok: &Token<'a>, _options: &Options) -> usize {
+        if ENCODED_UTF16 {
+            tok.text.chars().count()
+        } else {
+            tok.text.encode_utf16().count()
+        }
+    }
+
+    fn equals(&self, l: &Token<'a>, r: &Token<'a>, options: &Options) -> bool {
         fn strip(line: &str) -> std::borrow::Cow<'_, str> {
-            if let Some(rest) = line.strip_suffix(",\n") {
-                let mut s = rest.to_owned();
-                s.push('\n');
-                s.into()
-            } else if let Some(rest) = line.strip_suffix(",\r") {
-                let mut s = rest.to_owned();
-                s.push('\r');
-                s.into()
+            if !line
+                .as_bytes()
+                .windows(2)
+                .any(|pair| pair[0] == b',' && matches!(pair[1], b'\r' | b'\n'))
+            {
+                return line.into();
+            }
+
+            let mut stripped = String::with_capacity(line.len());
+            let mut chars = line.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == ',' && matches!(chars.peek(), Some('\r' | '\n')) {
+                    continue;
+                }
+                stripped.push(ch);
+            }
+            stripped.into()
+        }
+        let left = strip(l.text);
+        let right = strip(r.text);
+        if left == right {
+            return true;
+        }
+        if !options.ignore_case {
+            return false;
+        }
+
+        let lower = |value: &str| {
+            if ENCODED_UTF16 {
+                let units: Vec<u16> = value
+                    .chars()
+                    .map(|ch| {
+                        let point = ch as u32;
+                        (if point < 0xe000 { point } else { point - 0x800 }) as u16
+                    })
+                    .collect();
+                let mut decoded = js_sys::JsString::from("");
+                for chunk in units.chunks(8192) {
+                    decoded = decoded.concat(&js_sys::JsString::from_char_code(chunk));
+                }
+                decoded.to_lower_case()
             } else {
-                line.into()
+                js_sys::JsString::from(value).to_lower_case()
             }
-        }
-        strip(l.text) == strip(r.text)
+        };
+        lower(left.as_ref()) == lower(right.as_ref())
     }
 }
 
-pub fn canonicalize_value(v: &serde_json::Value) -> serde_json::Value {
-    match v {
-        serde_json::Value::Object(map) => {
-            let mut keys: Vec<_> = map.keys().collect();
-            keys.sort();
-            let mut out = serde_json::Map::new();
-            for k in keys {
-                out.insert(k.clone(), canonicalize_value(&map[k]));
-            }
-            serde_json::Value::Object(out)
-        }
-        serde_json::Value::Array(arr) => {
-            serde_json::Value::Array(arr.iter().map(canonicalize_value).collect())
-        }
-        _ => v.clone(),
-    }
-}
-
-#[wasm_bindgen(js_name = canonicalize)]
-pub fn canonicalize(js_val: JsValue) -> Result<JsValue, JsValue> {
-    let val: serde_json::Value = swb::from_value(js_val)?;
-    let canon = canonicalize_value(&val);
-    let as_string = serde_json::to_string(&canon).unwrap();
-    JSON::parse(&as_string)
-}
-
-fn to_pretty_json(val: &JsValue, opts: &JsonOptions) -> Result<String, JsValue> {
-    if val.is_string() {
-        return Ok(val.as_string().unwrap());
-    }
-
-    let mut ser: serde_json::Value = swb::from_value(val.clone())?;
-    if let Some(repl) = &opts.undefined_replacement {
-        fn patch(v: &mut serde_json::Value, rep: &serde_json::Value) {
-            match v {
-                serde_json::Value::Null => *v = rep.clone(),
-                serde_json::Value::Array(a) => a.iter_mut().for_each(|x| patch(x, rep)),
-                serde_json::Value::Object(m) => m.values_mut().for_each(|x| patch(x, rep)),
-                _ => {}
-            }
-        }
-        patch(&mut ser, repl);
-    }
-
-    let canon = canonicalize_value(&ser);
-    Ok(serde_json::to_string_pretty(&canon).unwrap())
+fn run_diff<const ENCODED_UTF16: bool>(
+    old_val: &str,
+    new_val: &str,
+    options: Options,
+) -> Result<JsValue, JsValue> {
+    use super::memory_pool::PooledDiff;
+    let mut diff = PooledDiff::new(JsonTokenizer::<ENCODED_UTF16>, options).with_longest_token();
+    let changes = diff.diff(old_val, new_val);
+    swb::to_value(&changes).map_err(Into::into)
 }
 
 #[wasm_bindgen(js_name = diffJson)]
-pub fn diff_json(old_val: JsValue, new_val: JsValue, opts: JsValue) -> Result<JsValue, JsValue> {
-    let jo: JsonOptions = swb::from_value(opts).unwrap_or_default();
-    let rust_opts = Options::default();
+pub fn diff_json(old_val: String, new_val: String, opts: JsValue) -> Result<JsValue, JsValue> {
+    let json_opts: JsonOptions = swb::from_value(opts).unwrap_or_default();
+    let rust_opts = Options {
+        ignore_case: json_opts.ignore_case,
+        one_change_per_token: json_opts.one_change_per_token,
+        max_edit_length: None,
+    };
 
-    let old_s = to_pretty_json(&old_val, &jo)?;
-    let new_s = to_pretty_json(&new_val, &jo)?;
-
-    use super::memory_pool::PooledDiff;
-    let mut diff = PooledDiff::new(JsonTokenizer, rust_opts).with_longest_token();
-    let changes = diff.diff(&old_s, &new_s);
-
-    swb::to_value(&changes).map_err(Into::into)
+    if json_opts.encoded_utf16 {
+        run_diff::<true>(&old_val, &new_val, rust_opts)
+    } else {
+        run_diff::<false>(&old_val, &new_val, rust_opts)
+    }
 }

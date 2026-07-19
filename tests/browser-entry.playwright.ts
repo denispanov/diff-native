@@ -1,21 +1,23 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { diffChars as referenceDiffChars } from 'diff';
+import { diffChars as referenceDiffChars, diffJson as referenceDiffJson } from 'diff';
 
 const testOrigin = 'https://diff-native.test';
 const artifactFiles = new Map([
   ['/dist/browser/index.js', new URL('../dist/browser/index.js', import.meta.url)],
+  ['/dist/browser/json.js', new URL('../dist/browser/json.js', import.meta.url)],
   ['/dist/browser/diff_native.js', new URL('../dist/browser/diff_native.js', import.meta.url)],
   [
     '/dist/browser/diff_native_bg.wasm',
     new URL('../dist/browser/diff_native_bg.wasm', import.meta.url),
   ],
   ['/dist/esm/index.js', new URL('../dist/esm/index.js', import.meta.url)],
+  ['/dist/esm/json.js', new URL('../dist/esm/json.js', import.meta.url)],
   ['/dist/esm/diff_native.js', new URL('../dist/esm/diff_native.js', import.meta.url)],
   ['/dist/esm/diff_native_bg.wasm', new URL('../dist/esm/diff_native_bg.wasm', import.meta.url)],
 ]);
 
-test('browser and ESM artifacts initialize before diffChars is called', async ({ page }) => {
+test('browser and ESM artifacts initialize before exported APIs are called', async ({ page }) => {
   await page.route(`${testOrigin}/**`, async route => {
     const { pathname } = new URL(route.request().url());
 
@@ -48,8 +50,10 @@ test('browser and ESM artifacts initialize before diffChars is called', async ({
       const esmArtifact = await import(esmArtifactUrl);
 
       return {
-        browserArtifact: browserArtifact.diffChars('ab', 'ac', {}),
-        esmArtifact: esmArtifact.diffChars('ab', 'ac', {}),
+        browserChars: browserArtifact.diffChars('ab', 'ac', {}),
+        esmChars: esmArtifact.diffChars('ab', 'ac', {}),
+        browserJson: browserArtifact.diffJson('', 'a\nb\n', { oneChangePerToken: true }),
+        esmJson: esmArtifact.diffJson('', 'a\nb\n', { oneChangePerToken: true }),
       };
     },
     {
@@ -57,8 +61,11 @@ test('browser and ESM artifacts initialize before diffChars is called', async ({
       esmArtifactUrl: `${testOrigin}/dist/esm/index.js`,
     }
   );
-  const expected = referenceDiffChars('ab', 'ac', {});
+  const expectedChars = referenceDiffChars('ab', 'ac', {});
+  const expectedJson = referenceDiffJson('', 'a\nb\n', { oneChangePerToken: true });
 
-  expect(artifacts.browserArtifact).toStrictEqual(expected);
-  expect(artifacts.esmArtifact).toStrictEqual(expected);
+  expect(artifacts.browserChars).toStrictEqual(expectedChars);
+  expect(artifacts.esmChars).toStrictEqual(expectedChars);
+  expect(artifacts.browserJson).toStrictEqual(expectedJson);
+  expect(artifacts.esmJson).toStrictEqual(expectedJson);
 });

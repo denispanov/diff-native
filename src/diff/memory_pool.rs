@@ -66,26 +66,10 @@ impl<'a, T: Tokeniser<'a>> PooledDiff<'a, T> {
             return Vec::new();
         }
         if a_len == 0 {
-            return self.tokenizer.post_process(
-                vec![Change {
-                    value: new_raw.to_string(),
-                    count: b_len as u32,
-                    added: true,
-                    removed: false,
-                }],
-                &self.opts,
-            );
+            return self.tokenizer.change_all(b, true, false, &self.opts);
         }
         if b_len == 0 {
-            return self.tokenizer.post_process(
-                vec![Change {
-                    value: old_raw.to_string(),
-                    count: a_len as u32,
-                    added: false,
-                    removed: true,
-                }],
-                &self.opts,
-            );
+            return self.tokenizer.change_all(a, false, true, &self.opts);
         }
 
         self.run_myers(a_len, b_len, a, b)
@@ -156,7 +140,10 @@ impl<'a, T: Tokeniser<'a>> PooledDiff<'a, T> {
                     for i in 0..count as usize {
                         let new_tok = &new_toks[new_pos + i];
                         let old_tok = &old_toks[old_pos + i];
-                        if old_tok.text.len() > new_tok.text.len() {
+                        if old_tok.text != new_tok.text
+                            && self.tokenizer.token_len(old_tok, &self.opts)
+                                > self.tokenizer.token_len(new_tok, &self.opts)
+                        {
                             chosen.push(*old_tok);
                         } else {
                             chosen.push(*new_tok);
