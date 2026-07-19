@@ -378,11 +378,7 @@ fn apply_hunk_rec(
             }
             _ => {
                 n_consecutive_ctx += 1;
-                let source_line = if let Some(l) = lines.get(to_pos as usize) {
-                    l.clone()
-                } else {
-                    return None;
-                };
+                let source_line = lines.get(to_pos as usize)?.clone();
 
                 let matches = if let Some(compare_fn) = compare_line {
                     let this = JsValue::NULL;

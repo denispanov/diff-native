@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This project has no persistent services. Repair tool links so non-login shells
+# can find toolchains installed in the user's home directory after an orb wakes.
+mkdir -p "$HOME/.local/bin"
+
+if [[ -x "$HOME/.bun/bin/bun" ]]; then
+  ln -sf "$HOME/.bun/bin/bun" "$HOME/.local/bin/bun"
+  ln -sf "$HOME/.bun/bin/bunx" "$HOME/.local/bin/bunx"
+fi
+
+for tool in cargo clippy-driver rustc rustdoc rustfmt rustup wasm-pack; do
+  if [[ -x "$HOME/.cargo/bin/$tool" ]]; then
+    ln -sf "$HOME/.cargo/bin/$tool" "$HOME/.local/bin/$tool"
+  fi
+done
+
+echo "Orb resume complete; no services to restart."
