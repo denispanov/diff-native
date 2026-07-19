@@ -156,11 +156,6 @@ impl<'a> Tokeniser<'a> for LineTokenizer {
 
 #[wasm_bindgen(js_name = diffLines)]
 pub fn diff_lines(old_str: &str, new_str: &str, js_opts: JsValue) -> Result<JsValue, JsValue> {
-    if js_opts.is_undefined() && old_str == new_str {
-        let empty: Vec<super::base::Change> = Vec::new();
-        return swb::to_value(&empty).map_err(Into::into);
-    }
-
     let lo: LineOptions = swb::from_value(js_opts).unwrap_or_default();
 
     if lo.strip_trailing_cr {

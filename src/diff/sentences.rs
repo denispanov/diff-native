@@ -3,7 +3,7 @@ use serde_wasm_bindgen as swb;
 use wasm_bindgen::{prelude::*, JsValue};
 
 use super::{
-    base::{Change, Options, Tokeniser},
+    base::{Options, Tokeniser},
     token::Token,
 };
 
@@ -109,11 +109,6 @@ impl From<SentenceOptions> for Options {
 
 #[wasm_bindgen(js_name = diffSentences)]
 pub fn diff_sentences(old_str: &str, new_str: &str, opts: JsValue) -> Result<JsValue, JsValue> {
-    if opts.is_undefined() && old_str == new_str {
-        let empty: Vec<Change> = Vec::new();
-        return swb::to_value(&empty).map_err(Into::into);
-    }
-
     let s_opts: SentenceOptions = swb::from_value(opts).unwrap_or_default();
     let options: Options = s_opts.into();
 

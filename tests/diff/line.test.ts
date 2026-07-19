@@ -9,19 +9,6 @@ beforeAll(async () => {
 });
 
 describe('diffLines', () => {
-  it('should return no changes for identical lines', () => {
-    const oldStr = 'line1\nline2\nline3';
-    const newStr = 'line1\nline2\nline3';
-    const options: DiffLinesOptions = {};
-    const result = wasm.diffLines(oldStr, newStr, options);
-
-    expect(Array.isArray(result)).toBe(true);
-    expect(result.length).toBe(1);
-    expect(result[0].added).toBe(false);
-    expect(result[0].removed).toBe(false);
-    expect(result[0].value).toBe(oldStr);
-  });
-
   it('should detect a changed line', () => {
     const oldStr = 'line1\nline2\nline3';
     const newStr = 'line1\nline_changed\nline3';

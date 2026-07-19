@@ -76,11 +76,6 @@ pub fn diff_css(old_str: &str, new_str: &str, opts: JsValue) -> Result<JsValue, 
         max_edit_length: o.max_edit_length,
     };
 
-    if !base_opts.ignore_case && !base_opts.one_change_per_token && old_str == new_str {
-        let empty: Vec<super::base::Change> = Vec::new();
-        return swb::to_value(&empty).map_err(Into::into);
-    }
-
     use super::memory_pool::PooledDiff;
     let mut diff = PooledDiff::new(CssTokenizer, base_opts);
     let changes = diff.diff(old_str, new_str);
