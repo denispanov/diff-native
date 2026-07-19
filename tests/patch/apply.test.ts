@@ -233,31 +233,7 @@ describe('patch/apply - #applyPatch basics', () => {
       'new value\n' +
       'new value 2\n' +
       'context\n'.repeat(2);
-    const diffFile =
-      'Index: testFileName\n' +
-      '===================================================================\n' +
-      '--- testFileName\tOld Header\n' +
-      '+++ testFileName\tNew Header\n' +
-      '@@ -1,5 +1,6 @@\n' +
-      '+new value\n' +
-      '+new value 2\n' +
-      '-value\n' +
-      ' context\n'.repeat(4) +
-      '@@ -7,9 +8,8 @@\n' +
-      ' context\n'.repeat(4) +
-      '-remove value\n' +
-      ' context\n'.repeat(3) +
-      '@@ -17,20 +17,21 @@\n' +
-      ' context\n'.repeat(3) +
-      '-remove value\n' +
-      ' context\n'.repeat(7) +
-      '+add value\n' +
-      ' context\n'.repeat(4) +
-      '+new value\n' +
-      '+new value 2\n' +
-      '-value\n' +
-      ' context\n'.repeat(2) +
-      '\\ No newline at end of file\n';
+    const diffFile = wasm.createPatch('testFileName', oldFile, newFile);
 
     expect(wasm.applyPatch(oldFile, diffFile)).toBe(newFile);
 

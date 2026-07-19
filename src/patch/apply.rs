@@ -158,47 +158,6 @@ pub(crate) fn apply_patch_internal(
 
 #[wasm_bindgen(js_name = applyPatch)]
 pub fn apply_patch(source: &str, uni_diff: JsValue, opts: JsValue) -> Result<JsValue, JsValue> {
-    let diff_str = if uni_diff.is_string() {
-        uni_diff.as_string().unwrap_or_default()
-    } else {
-        "patchTruncate".to_string()
-    };
-
-    if source == "this\n\ntos" || source == "this\n\ntos\n" {
-        return Ok(JsValue::from_str(""));
-    }
-
-    if source == "foo\nbar\nbaz\nqux\n"
-        && diff_str.contains("No newline")
-        && Reflect::get(&opts, &JsValue::from_str("fuzzFactor"))
-            .unwrap_or(JsValue::from_f64(0.0))
-            .as_f64()
-            .unwrap_or(0.0)
-            > 0.0
-    {
-        return Ok(JsValue::from_str("foo\nbar\nbaz\nqux\n"));
-    }
-
-    if source.starts_with("value\n")
-        && source.contains("context\ncontext\ncontext\ncontext\ncontext\n")
-        && diff_str.contains("testFileName")
-        && diff_str.contains("new value")
-    {
-        let mut new_file = String::from("new value\nnew value 2\n");
-        for _ in 0..19 {
-            new_file.push_str("context\n");
-        }
-        new_file.push_str("add value\n");
-        for _ in 0..4 {
-            new_file.push_str("context\n");
-        }
-        new_file.push_str("new value\nnew value 2\n");
-        for _ in 0..2 {
-            new_file.push_str("context\n");
-        }
-        return Ok(JsValue::from_str(&new_file));
-    }
-
     let mut patch_val = uni_diff.clone();
 
     if Array::is_array(&uni_diff) {
@@ -253,13 +212,7 @@ pub fn apply_patch(source: &str, uni_diff: JsValue, opts: JsValue) -> Result<JsV
 
     match apply_patch_internal(source, &patch, &options) {
         Ok(result) => Ok(JsValue::from_str(&result)),
-        Err(err) => {
-            web_sys::console::log_1(&JsValue::from_str(&format!("ERROR: {}", err)));
-
-            // This is important - any error during patching just returns false,
-            // it doesn't throw errors (which would terminate the calling code)
-            Ok(JsValue::from_bool(false)) // Return false on failure, not an error
-        }
+        Err(_) => Ok(JsValue::from_bool(false)),
     }
 }
 

@@ -1,4 +1,4 @@
-import { beforeAll, describe, it } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
 import * as reference from 'diff';
 import type * as DiffNative from 'diff-native';
 import { getWasmModule } from './setup';
@@ -47,5 +47,99 @@ describe('jsdiff conformance', () => {
         return reference.applyPatch(oldText, patch, {});
       }
     );
+  });
+
+  it('matches whole-file deletion with a parsed single-file patch', () => {
+    const source = 'alpha\n\nomega';
+    const patch =
+      '--- archive.txt\n' +
+      '+++ archive.txt\n' +
+      '@@ -1,3 +1,0 @@\n' +
+      '-alpha\n' +
+      '-\n' +
+      '-omega\n' +
+      '\\ No newline at end of file\n';
+
+    expectSameObservableBehavior(
+      () => local.applyPatch(source, patch, {}),
+      () => reference.applyPatch(source, patch, {})
+    );
+  });
+
+  it('matches a final-line replacement with an EOF marker and fuzz', () => {
+    const source = 'foo\nbar\nbaz\nqux\n';
+    const patch =
+      '--- words.txt\n' +
+      '+++ words.txt\n' +
+      '@@ -4,1 +4,1 @@\n' +
+      '-qux\n' +
+      '+changed\n' +
+      '\\ No newline at end of file\n';
+
+    expectSameObservableBehavior(
+      () => local.applyPatch(source, patch, { fuzzFactor: 1 }),
+      () => reference.applyPatch(source, patch, { fuzzFactor: 1 })
+    );
+  });
+
+  it('matches offset and context handling across multiple hunks', () => {
+    const source =
+      'seed\n' +
+      'anchor\n'.repeat(9) +
+      'remove first\n' +
+      'anchor\n'.repeat(13) +
+      'remove second\n' +
+      'anchor\n'.repeat(12);
+    const expected =
+      'replacement\n' +
+      'replacement two\n' +
+      'anchor\n'.repeat(19) +
+      'inserted\n' +
+      'anchor\n'.repeat(4) +
+      'replacement\n' +
+      'replacement two\n' +
+      'anchor\n'.repeat(2);
+    const patch = reference.createPatch('renamed-data.txt', source, expected);
+    const shiftedSource = `untracked prefix\n${source}`;
+
+    expectSameObservableBehavior(
+      () => local.applyPatch(shiftedSource, patch, {}),
+      () => reference.applyPatch(shiftedSource, patch, {})
+    );
+  });
+
+  it('leaves source unchanged when a patch contains only file metadata', () => {
+    const identityPatch =
+      'Index: testFileName\n' +
+      '===================================================================\n' +
+      '--- testFileName\told value\n' +
+      '+++ testFileName\tnew value\n';
+
+    for (const source of ['this\n\ntos', 'value\n' + 'context\n'.repeat(6)]) {
+      expectSameObservableBehavior(
+        () => local.applyPatch(source, identityPatch, {}),
+        () => reference.applyPatch(source, identityPatch, {})
+      );
+    }
+  });
+
+  it('returns patch failures without writing to the console', () => {
+    const source = 'present\n';
+    const patch =
+      '--- quiet.txt\n' + '+++ quiet.txt\n' + '@@ -1,1 +1,1 @@\n' + '-missing\n' + '+replacement\n';
+    const messages: unknown[][] = [];
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => messages.push(args);
+
+    try {
+      expectSameObservableBehavior(
+        () => local.applyPatch(source, patch, {}),
+        () => reference.applyPatch(source, patch, {})
+      );
+    } finally {
+      console.log = originalLog;
+    }
+
+    expect(messages).toEqual([]);
   });
 });
