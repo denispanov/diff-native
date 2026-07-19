@@ -4,10 +4,10 @@ use pretty_assertions::assert_eq;
 fn create_patch(hunks: Vec<Hunk>) -> Patch {
     Patch {
         index: None,
-        old_file_name: String::new(),
-        new_file_name: String::new(),
-        old_header: String::new(),
-        new_header: String::new(),
+        old_file_name: None,
+        new_file_name: None,
+        old_header: None,
+        new_header: None,
         hunks,
     }
 }
@@ -22,10 +22,10 @@ fn create_full_patch(
 ) -> Patch {
     Patch {
         index,
-        old_file_name: old_file_name.to_string(),
-        new_file_name: new_file_name.to_string(),
-        old_header: old_header.to_string(),
-        new_header: new_header.to_string(),
+        old_file_name: Some(old_file_name.to_string()),
+        new_file_name: Some(new_file_name.to_string()),
+        old_header: Some(old_header.to_string()),
+        new_header: Some(new_header.to_string()),
         hunks,
     }
 }
@@ -38,10 +38,10 @@ fn create_hunk(
     lines: Vec<&str>,
 ) -> Hunk {
     Hunk {
-        old_start,
-        old_lines,
-        new_start,
-        new_lines,
+        old_start: old_start.into(),
+        old_lines: old_lines.into(),
+        new_start: new_start.into(),
+        new_lines: new_lines.into(),
         lines: lines.iter().map(|s| s.to_string()).collect(),
     }
 }
@@ -476,20 +476,13 @@ fn test_oom_case() {
 +1
 +2";
 
-    let expected = vec![create_full_patch(
-        None,
-        "",
-        "",
-        "",
-        "",
-        vec![create_hunk(
-            1,
-            1,
-            1,
-            2,
-            vec!["-1", "\\ No newline at end of file", "+1", "+2"],
-        )],
-    )];
+    let expected = vec![create_patch(vec![create_hunk(
+        1,
+        1,
+        1,
+        2,
+        vec!["-1", "\\ No newline at end of file", "+1", "+2"],
+    )])];
 
     let result = parse_patch_internal(input).unwrap();
     assert_eq!(result, expected);
@@ -508,14 +501,9 @@ fn test_sanity_check_line_count() {
 fn test_invalid_input() {
     let input = "blit\nblat\nIndex: foo\nfoo";
 
-    let expected = vec![create_full_patch(
-        Some("foo".to_string()),
-        "",
-        "",
-        "",
-        "",
-        vec![],
-    )];
+    let mut expected_patch = create_patch(vec![]);
+    expected_patch.index = Some("foo".to_string());
+    let expected = vec![expected_patch];
 
     let result = parse_patch_internal(input).unwrap();
     assert_eq!(result, expected);
@@ -524,7 +512,7 @@ fn test_invalid_input() {
 #[test]
 fn test_empty_input() {
     let input = "";
-    let expected: Vec<Patch> = vec![];
+    let expected = vec![create_patch(vec![])];
 
     let result = parse_patch_internal(input).unwrap();
     assert_eq!(result, expected);
@@ -554,8 +542,8 @@ fn test_parse_header_edge_cases() {
 
     let result3 = parse_patch_internal(input3).unwrap();
     assert_eq!(result3[0].index, None);
-    assert_eq!(result3[0].old_file_name, "");
-    assert_eq!(result3[0].new_file_name, "");
+    assert_eq!(result3[0].old_file_name.as_deref(), None);
+    assert_eq!(result3[0].new_file_name.as_deref(), None);
 }
 
 #[test]
@@ -566,28 +554,46 @@ fn test_file_header_parsing_edge_cases() {
  unchanged";
 
     let result1 = parse_patch_internal(input1).unwrap();
-    assert_eq!(result1[0].old_file_name, "/path/to/file.txt");
-    assert_eq!(result1[0].new_file_name, "/path/to/new_file.txt");
-    assert_eq!(result1[0].old_header, "2023-01-01 12:00:00.000000000 +0000");
-    assert_eq!(result1[0].new_header, "2023-01-01 12:00:01.000000000 +0000");
+    assert_eq!(
+        result1[0].old_file_name.as_deref(),
+        Some("/path/to/file.txt")
+    );
+    assert_eq!(
+        result1[0].new_file_name.as_deref(),
+        Some("/path/to/new_file.txt")
+    );
+    assert_eq!(
+        result1[0].old_header.as_deref(),
+        Some("2023-01-01 12:00:00.000000000 +0000")
+    );
+    assert_eq!(
+        result1[0].new_header.as_deref(),
+        Some("2023-01-01 12:00:01.000000000 +0000")
+    );
     let input2 = "--- file_a
 +++ file_b
 @@ -1 +1 @@
  unchanged";
 
     let result2 = parse_patch_internal(input2).unwrap();
-    assert_eq!(result2[0].old_file_name, "file_a");
-    assert_eq!(result2[0].new_file_name, "file_b");
-    assert_eq!(result2[0].old_header, "");
-    assert_eq!(result2[0].new_header, "");
+    assert_eq!(result2[0].old_file_name.as_deref(), Some("file_a"));
+    assert_eq!(result2[0].new_file_name.as_deref(), Some("file_b"));
+    assert_eq!(result2[0].old_header.as_deref(), Some(""));
+    assert_eq!(result2[0].new_header.as_deref(), Some(""));
     let input3 = "--- file\\with\\backslashes.txt
 +++ file\\with\\backslashes.txt
 @@ -1 +1 @@
  unchanged";
 
     let result3 = parse_patch_internal(input3).unwrap();
-    assert_eq!(result3[0].old_file_name, "file\\with\\backslashes.txt");
-    assert_eq!(result3[0].new_file_name, "file\\with\\backslashes.txt");
+    assert_eq!(
+        result3[0].old_file_name.as_deref(),
+        Some("file\\with\\backslashes.txt")
+    );
+    assert_eq!(
+        result3[0].new_file_name.as_deref(),
+        Some("file\\with\\backslashes.txt")
+    );
 }
 
 #[test]
@@ -634,18 +640,24 @@ fn test_quoted_filename_edge_cases() {
 
     let result = parse_patch_internal(input).unwrap();
     assert_eq!(
-        result[0].old_file_name,
-        "file with spaces and \"quotes\".txt"
+        result[0].old_file_name.as_deref(),
+        Some("file with spaces and \"quotes\".txt")
     );
-    assert_eq!(result[0].new_file_name, "another file with spaces.txt");
+    assert_eq!(
+        result[0].new_file_name.as_deref(),
+        Some("another file with spaces.txt")
+    );
     let input2 = "--- \"unbalanced_quote.txt\theader
 +++ normal_file.txt\theader
 @@ -1 +1 @@
  unchanged";
 
     let result2 = parse_patch_internal(input2).unwrap();
-    assert_eq!(result2[0].old_file_name, "\"unbalanced_quote.txt");
-    assert_eq!(result2[0].new_file_name, "normal_file.txt");
+    assert_eq!(
+        result2[0].old_file_name.as_deref(),
+        Some("\"unbalanced_quote.txt")
+    );
+    assert_eq!(result2[0].new_file_name.as_deref(), Some("normal_file.txt"));
 }
 
 #[test]
@@ -743,9 +755,9 @@ Index: file2
 
     let result = parse_patch_internal(input).unwrap();
     assert_eq!(result.len(), 2);
-    assert_eq!(result[0].old_file_name, "file1");
+    assert_eq!(result[0].old_file_name.as_deref(), Some("file1"));
     assert_eq!(result[1].index, Some("file2".to_string()));
-    assert_eq!(result[1].old_file_name, "file2");
+    assert_eq!(result[1].old_file_name.as_deref(), Some("file2"));
 }
 
 #[test]

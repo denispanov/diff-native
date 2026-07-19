@@ -37,7 +37,7 @@
     "build:wasm:node": "wasm-pack build --target nodejs --out-dir pkg",
     "build:wasm:web": "wasm-pack build --target web --out-dir pkg-web",
     "build:ts": "tsc",
-    "build:node": "mkdir -p dist/node && cp -r pkg/* dist/node/ && cp src/node-index.js dist/node/index.js",
+    "build:node": "mkdir -p dist/node && cp -r pkg/* dist/node/ && cp src/node-index.js dist/node/index.js && node scripts/prepare-node-snippets.mjs",
     "build:browser": "mkdir -p dist/browser && cp -r pkg-web/* dist/browser/ && cp src/browser-index.js dist/browser/index.js",
     "build:esm": "mkdir -p dist/esm && cp -r pkg-web/* dist/esm/ && cp src/esm-index.js dist/esm/index.js",
     "build": "bun run clean && bun run build:wasm:node && bun run build:wasm:web && bun run build:ts && bun run build:node && bun run build:browser && bun run build:esm",

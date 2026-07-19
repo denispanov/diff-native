@@ -2,6 +2,12 @@ use wasm_bindgen::prelude::*;
 
 use crate::patch::types::{Hunk, Patch};
 
+#[wasm_bindgen(module = "/src/patch-boundary.js")]
+extern "C" {
+    #[wasm_bindgen(js_name = reversePatchBoundary, catch)]
+    fn reverse_patch_boundary(patch: &JsValue) -> Result<JsValue, JsValue>;
+}
+
 pub fn reverse_single(p: &Patch) -> Patch {
     let mut out = p.clone();
     std::mem::swap(&mut out.old_file_name, &mut out.new_file_name);
@@ -35,11 +41,5 @@ pub fn reverse_single(p: &Patch) -> Patch {
 
 #[wasm_bindgen(js_name = reversePatch)]
 pub fn reverse_patch(val: JsValue) -> Result<JsValue, JsValue> {
-    if let Ok(vec) = serde_wasm_bindgen::from_value::<Vec<Patch>>(val.clone()) {
-        let mut rev: Vec<Patch> = vec.iter().map(reverse_single).collect();
-        rev.reverse();
-        return serde_wasm_bindgen::to_value(&rev).map_err(Into::into);
-    }
-    let patch: Patch = serde_wasm_bindgen::from_value(val)?;
-    serde_wasm_bindgen::to_value(&reverse_single(&patch)).map_err(Into::into)
+    reverse_patch_boundary(&val)
 }

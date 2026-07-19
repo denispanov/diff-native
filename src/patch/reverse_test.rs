@@ -10,10 +10,10 @@ fn create_patch(
 ) -> Patch {
     Patch {
         index: None,
-        old_file_name: old_file_name.to_string(),
-        new_file_name: new_file_name.to_string(),
-        old_header: old_header.to_string(),
-        new_header: new_header.to_string(),
+        old_file_name: Some(old_file_name.to_string()),
+        new_file_name: Some(new_file_name.to_string()),
+        old_header: Some(old_header.to_string()),
+        new_header: Some(new_header.to_string()),
         hunks,
     }
 }
@@ -26,10 +26,10 @@ fn create_hunk(
     lines: Vec<&str>,
 ) -> Hunk {
     Hunk {
-        old_start,
-        old_lines,
-        new_start,
-        new_lines,
+        old_start: old_start.into(),
+        old_lines: old_lines.into(),
+        new_start: new_start.into(),
+        new_lines: new_lines.into(),
         lines: lines.into_iter().map(|s| s.to_string()).collect(),
     }
 }
@@ -51,10 +51,10 @@ fn test_reverse_single_patch_basic() {
     );
 
     let reversed = reverse_single(&original_patch);
-    assert_eq!(reversed.old_file_name, "file2");
-    assert_eq!(reversed.new_file_name, "file1");
-    assert_eq!(reversed.old_header, "");
-    assert_eq!(reversed.new_header, "");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("file2"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("file1"));
+    assert_eq!(reversed.old_header.as_deref(), Some(""));
+    assert_eq!(reversed.new_header.as_deref(), Some(""));
     assert_eq!(reversed.hunks.len(), 1);
     let hunk = &reversed.hunks[0];
     assert_eq!(hunk.old_start, 1);
@@ -69,10 +69,10 @@ fn test_reverse_single_patch_basic() {
 fn test_reverse_single_patch_with_headers() {
     let original_patch = Patch {
         index: Some("index 20b807a..4a96aff 100644".to_string()),
-        old_file_name: "a/CONTRIBUTING.md".to_string(),
-        new_file_name: "b/CONTRIBUTING.md".to_string(),
-        old_header: "old header".to_string(),
-        new_header: "new header".to_string(),
+        old_file_name: Some("a/CONTRIBUTING.md".to_string()),
+        new_file_name: Some("b/CONTRIBUTING.md".to_string()),
+        old_header: Some("old header".to_string()),
+        new_header: Some("new header".to_string()),
         hunks: vec![create_hunk(
             2,
             6,
@@ -91,10 +91,10 @@ fn test_reverse_single_patch_with_headers() {
 
     let reversed = reverse_single(&original_patch);
 
-    assert_eq!(reversed.old_file_name, "b/CONTRIBUTING.md");
-    assert_eq!(reversed.new_file_name, "a/CONTRIBUTING.md");
-    assert_eq!(reversed.old_header, "new header");
-    assert_eq!(reversed.new_header, "old header");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("b/CONTRIBUTING.md"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("a/CONTRIBUTING.md"));
+    assert_eq!(reversed.old_header.as_deref(), Some("new header"));
+    assert_eq!(reversed.new_header.as_deref(), Some("old header"));
     assert_eq!(
         reversed.index,
         Some("index 20b807a..4a96aff 100644".to_string())
@@ -143,8 +143,8 @@ fn test_reverse_single_patch_complex_changes() {
 
     let reversed = reverse_single(&original_patch);
 
-    assert_eq!(reversed.old_file_name, "new.txt");
-    assert_eq!(reversed.new_file_name, "old.txt");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("new.txt"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("old.txt"));
 
     let hunk = &reversed.hunks[0];
     assert_eq!(hunk.old_start, 1);
@@ -230,8 +230,8 @@ fn test_reverse_patch_array_behavior() {
     let mut reversed: Vec<Patch> = original_patches.iter().map(reverse_single).collect();
     reversed.reverse();
     assert_eq!(reversed.len(), 2);
-    assert_eq!(reversed[0].old_file_name, "b/README.md");
-    assert_eq!(reversed[0].new_file_name, "a/README.md");
+    assert_eq!(reversed[0].old_file_name.as_deref(), Some("b/README.md"));
+    assert_eq!(reversed[0].new_file_name.as_deref(), Some("a/README.md"));
     assert_eq!(reversed[0].hunks.len(), 2);
     let hunk1 = &reversed[0].hunks[0];
     assert_eq!(hunk1.old_start, 1);
@@ -240,8 +240,14 @@ fn test_reverse_patch_array_behavior() {
     assert_eq!(hunk1.new_lines, 5);
     let expected_lines1 = vec![" # jsdiff", " ", "-foo", "-", " [![Build Status](https://secure.travis-ci.org/kpdecker/jsdiff.svg)](http://travis-ci.org/kpdecker/jsdiff)"];
     assert_eq!(hunk1.lines, expected_lines1);
-    assert_eq!(reversed[1].old_file_name, "b/CONTRIBUTING.md");
-    assert_eq!(reversed[1].new_file_name, "a/CONTRIBUTING.md");
+    assert_eq!(
+        reversed[1].old_file_name.as_deref(),
+        Some("b/CONTRIBUTING.md")
+    );
+    assert_eq!(
+        reversed[1].new_file_name.as_deref(),
+        Some("a/CONTRIBUTING.md")
+    );
     assert_eq!(reversed[1].hunks.len(), 1);
 }
 
@@ -289,8 +295,8 @@ fn test_reverse_patch_context_only() {
 
     let reversed = reverse_single(&original_patch);
 
-    assert_eq!(reversed.old_file_name, "same.txt");
-    assert_eq!(reversed.new_file_name, "same.txt");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("same.txt"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("same.txt"));
 
     let hunk = &reversed.hunks[0];
     assert_eq!(hunk.old_start, 1);
@@ -307,8 +313,8 @@ fn test_reverse_patch_edge_case_empty_patch() {
 
     let reversed = reverse_single(&original_patch);
 
-    assert_eq!(reversed.old_file_name, "empty2");
-    assert_eq!(reversed.new_file_name, "empty1");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("empty2"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("empty1"));
     assert_eq!(reversed.hunks.len(), 0);
 }
 
@@ -385,10 +391,10 @@ fn test_reverse_patch_compatibility() {
     );
 
     let reversed = reverse_single(&original_patch);
-    assert_eq!(reversed.old_file_name, "file2");
-    assert_eq!(reversed.new_file_name, "file1");
-    assert_eq!(reversed.old_header, "");
-    assert_eq!(reversed.new_header, "");
+    assert_eq!(reversed.old_file_name.as_deref(), Some("file2"));
+    assert_eq!(reversed.new_file_name.as_deref(), Some("file1"));
+    assert_eq!(reversed.old_header.as_deref(), Some(""));
+    assert_eq!(reversed.new_header.as_deref(), Some(""));
 
     let hunk = &reversed.hunks[0];
     assert_eq!(hunk.old_start, 1);
