@@ -55,7 +55,7 @@
     "test": "bun test",
     "test:conformance": "bun test tests/conformance.test.ts",
     "test:package": "node scripts/package-entry-verification.mjs",
-    "test:browser": "node scripts/browser-entry-verification.mjs",
+    "test:browser": "playwright test tests/browser-entry.playwright.ts",
     "test:rust": "cargo test --lib",
     "test:coverage": "cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out html",
     "lint": "biome lint .",
@@ -70,6 +70,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "1.61.1",
     "@types/node": "^22.13.4",
     "bun-types": "latest",
     "diff": "9.0.0",
