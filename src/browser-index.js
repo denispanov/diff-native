@@ -1,4 +1,7 @@
-import * as diffNative from './diff_native.js';
+import init, * as diffNative from './diff_native.js';
+
+await init();
+
 export const diffChars = diffNative.diffChars;
 export const diffWordsWithSpace = diffNative.diffWordsWithSpace;
 export const diffWords = diffNative.diffWords;

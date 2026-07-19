@@ -19,7 +19,7 @@ jobs:
           components: clippy
       
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
       
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -34,6 +34,12 @@ jobs:
       
       - name: Build
         run: bun run build
+
+      - name: Verify package entries
+        run: bun run test:package
+
+      - name: Verify browser and ESM artifacts
+        run: bun run test:browser
       
       - name: Check code quality
         run: bun run check
