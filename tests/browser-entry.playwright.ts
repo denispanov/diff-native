@@ -15,7 +15,7 @@ const artifactFiles = new Map([
   ['/dist/esm/diff_native_bg.wasm', new URL('../dist/esm/diff_native_bg.wasm', import.meta.url)],
 ]);
 
-test('browser and ESM artifacts initialize before diffChars is called', async ({ page }) => {
+test('browser and ESM artifacts initialize with generated WASM helpers', async ({ page }) => {
   await page.route(`${testOrigin}/**`, async route => {
     const { pathname } = new URL(route.request().url());
 
@@ -27,7 +27,11 @@ test('browser and ESM artifacts initialize before diffChars is called', async ({
       return;
     }
 
-    const artifactFile = artifactFiles.get(pathname);
+    const artifactFile =
+      artifactFiles.get(pathname) ??
+      (pathname.startsWith('/dist/browser/snippets/') || pathname.startsWith('/dist/esm/snippets/')
+        ? new URL(`..${pathname}`, import.meta.url)
+        : undefined);
     if (!artifactFile) {
       await route.fulfill({ status: 404 });
       return;
@@ -46,10 +50,17 @@ test('browser and ESM artifacts initialize before diffChars is called', async ({
     async ({ browserArtifactUrl, esmArtifactUrl }) => {
       const browserArtifact = await import(browserArtifactUrl);
       const esmArtifact = await import(esmArtifactUrl);
+      const text = '我喜欢北京烤鸭';
+      const segmenter = {
+        resolvedOptions: () => ({ granularity: 'word' }),
+        segment: (value: string) => Array.from(value, segment => ({ segment })),
+      };
 
       return {
-        browserArtifact: browserArtifact.diffChars('ab', 'ac', {}),
-        esmArtifact: esmArtifact.diffChars('ab', 'ac', {}),
+        browserChars: browserArtifact.diffChars('ab', 'ac', {}),
+        esmChars: esmArtifact.diffChars('ab', 'ac', {}),
+        browserWords: browserArtifact.wordDiff.tokenize(text, { intlSegmenter: segmenter }),
+        esmWords: esmArtifact.wordDiff.tokenize(text, { intlSegmenter: segmenter }),
       };
     },
     {
@@ -58,7 +69,10 @@ test('browser and ESM artifacts initialize before diffChars is called', async ({
     }
   );
   const expected = referenceDiffChars('ab', 'ac', {});
+  const expectedWords = Array.from('我喜欢北京烤鸭');
 
-  expect(artifacts.browserArtifact).toStrictEqual(expected);
-  expect(artifacts.esmArtifact).toStrictEqual(expected);
+  expect(artifacts.browserChars).toStrictEqual(expected);
+  expect(artifacts.esmChars).toStrictEqual(expected);
+  expect(artifacts.browserWords).toStrictEqual(expectedWords);
+  expect(artifacts.esmWords).toStrictEqual(expectedWords);
 });

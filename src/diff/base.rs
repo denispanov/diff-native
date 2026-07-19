@@ -72,6 +72,25 @@ fn ascii_eq_ignore_case(a: &[u8], b: &[u8]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_ignore_ascii_case(y))
 }
 
+#[inline]
+pub(crate) fn js_eq_ignore_case(a: &str, b: &str) -> bool {
+    if a.is_ascii() && b.is_ascii() {
+        return ascii_eq_ignore_case(a.as_bytes(), b.as_bytes());
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        use js_sys::JsString;
+
+        JsString::from(a).to_lower_case() == JsString::from(b).to_lower_case()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        a.to_lowercase() == b.to_lowercase()
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Component {
     count: u32,

@@ -1,10 +1,3 @@
-use lazy_static::lazy_static;
-use regex::Regex;
-
-lazy_static! {
-    static ref WS_RE: Regex = Regex::new(r"\s").unwrap();
-}
-
 pub fn longest_common_prefix<'a>(a: &'a str, b: &'a str) -> &'a str {
     let mut n = 0;
     for (ca, cb) in a.chars().zip(b.chars()) {
@@ -67,17 +60,35 @@ pub fn remove_suffix(s: &str, old: &str) -> String {
 pub fn maximum_overlap<'a>(a: &'a str, b: &'a str) -> &'a str {
     let max = a.len().min(b.len());
     for i in (1..=max).rev() {
-        if a[a.len() - i..] == b[..i] {
+        if a.is_char_boundary(a.len() - i) && b.is_char_boundary(i) && a[a.len() - i..] == b[..i] {
             return &b[..i];
         }
     }
     ""
 }
 
+#[inline]
+pub fn is_ecmascript_whitespace(ch: char) -> bool {
+    matches!(
+        ch,
+        '\u{0009}'..='\u{000D}'
+            | '\u{0020}'
+            | '\u{00A0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200A}'
+            | '\u{2028}'
+            | '\u{2029}'
+            | '\u{202F}'
+            | '\u{205F}'
+            | '\u{3000}'
+            | '\u{FEFF}'
+    )
+}
+
 pub fn trailing_ws(s: &str) -> &str {
     let mut idx = s.len();
     for (i, ch) in s.char_indices().rev() {
-        if !WS_RE.is_match(ch.encode_utf8(&mut [0; 4])) {
+        if !is_ecmascript_whitespace(ch) {
             break;
         }
         idx = i;
@@ -88,7 +99,7 @@ pub fn trailing_ws(s: &str) -> &str {
 pub fn leading_ws(s: &str) -> &str {
     let mut idx = 0;
     for (i, ch) in s.char_indices() {
-        if !WS_RE.is_match(ch.encode_utf8(&mut [0; 4])) {
+        if !is_ecmascript_whitespace(ch) {
             break;
         }
         idx = i + ch.len_utf8();
