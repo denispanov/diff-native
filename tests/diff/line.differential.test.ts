@@ -51,7 +51,6 @@ function buildWellFormedLineTextArbitrary(maxLines: number): fc.Arbitrary<string
     });
 }
 
-// Keep this well-formed: the JS→WASM `&str` boundary maps identity input "\uD800" to U+FFFD, unlike diff@9.0.0.
 const wellFormedLineTextArbitrary = buildWellFormedLineTextArbitrary(12);
 const relatedLineTextPairArbitrary = fc
   .tuple(buildWellFormedLineTextArbitrary(10), lineEndingArbitrary, lineArbitrary, fc.boolean())
