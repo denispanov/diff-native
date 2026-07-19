@@ -34,7 +34,7 @@
   "files": ["dist/", "types/", "LICENSE", "README.md"],
   "scripts": {
     "clean": "rm -rf dist pkg pkg-web",
-    "build:wasm:node": "wasm-pack build --target nodejs --out-dir pkg",
+    "build:wasm:node": "wasm-pack build --target nodejs --out-dir pkg && node scripts/prepare-node-wasm-snippets.mjs pkg/snippets",
     "build:wasm:web": "wasm-pack build --target web --out-dir pkg-web",
     "build:ts": "tsc",
     "build:node": "mkdir -p dist/node && cp -r pkg/* dist/node/ && cp src/node-index.js dist/node/index.js",

@@ -53,6 +53,12 @@ declare module 'diff-native' {
     ignoreWhitespace?: boolean;
   }
 
+  /** Options specific to word-based diff algorithms. */
+  export interface DiffWordsOptions extends DiffOptions {
+    /** A word-granularity Intl.Segmenter. */
+    intlSegmenter?: any;
+  }
+
   /**
    * Options specific to line-based diff algorithms.
    */
@@ -164,7 +170,7 @@ declare module 'diff-native' {
   export function diffWordsWithSpace(
     oldStr: string,
     newStr: string,
-    options?: DiffOptions
+    options?: DiffWordsOptions
   ): Change[];
 
   /**
@@ -177,7 +183,7 @@ declare module 'diff-native' {
    * @param options Optional configuration options.
    * @returns An array of change objects.
    */
-  export function diffWords(oldStr: string, newStr: string, options?: DiffOptions): Change[];
+  export function diffWords(oldStr: string, newStr: string, options?: DiffWordsOptions): Change[];
 
   /**
    * Diffs two blocks of text, treating each Unicode character as a token.
@@ -465,7 +471,7 @@ declare module 'diff-native' {
      * @param text The text to tokenize.
      * @returns An array of word tokens.
      */
-    tokenize(text: string): string[];
+    tokenize(text: string, options?: DiffWordsOptions): string[];
   };
 
   /**

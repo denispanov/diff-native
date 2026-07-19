@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 use crate::diff::{
-    base::{Options as BaseOptions, Tokeniser},
+    base::{js_eq_ignore_case, Options as BaseOptions, Tokeniser},
     memory_pool::PooledDiff,
     token::Token,
 };
@@ -39,6 +39,14 @@ impl<'a> Tokeniser<'a> for CharTokenizer {
             out.push_str(t.text);
         }
         out
+    }
+
+    fn equals(&self, left: &Token<'a>, right: &Token<'a>, opts: &BaseOptions) -> bool {
+        if opts.ignore_case {
+            js_eq_ignore_case(left.text, right.text)
+        } else {
+            left.text == right.text
+        }
     }
 }
 
